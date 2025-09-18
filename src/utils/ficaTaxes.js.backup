@@ -1,0 +1,99 @@
+// FICA (Social Security and Medicare) Tax Calculations
+
+// 2025 FICA tax rates and limits
+export const FICA_RATES_2025 = {
+  socialSecurity: 0.062,    // 6.2%
+  medicare: 0.0145,         // 1.45%
+  additionalMedicare: 0.009 // 0.9% on high earners
+};
+
+export const FICA_LIMITS_2025 = {
+  socialSecurityWageBase: 176100,  // 2025 wage base
+  additionalMedicareThreshold: {
+    single: 200000,
+    marriedFilingJointly: 250000,
+    marriedFilingSeparately: 125000,
+    headOfHousehold: 200000
+  }
+};
+
+// Calculate FICA taxes on earned income
+export function calculateFICATaxes(earnedIncome, filingStatus = 'single') {
+  if (earnedIncome <= 0) {
+    return {
+      socialSecurityTax: 0,
+      medicareTax: 0,
+      additionalMedicareTax: 0,
+      totalFICA: 0,
+      breakdown: {
+        earnedIncome: 0,
+        socialSecurityTaxableWages: 0,
+        medicareTaxableWages: 0,
+        additionalMedicareTaxableWages: 0
+      }
+    };
+  }
+
+  // Social Security tax (6.2% up to wage base)
+  const socialSecurityTaxableWages = Math.min(earnedIncome, FICA_LIMITS_2025.socialSecurityWageBase);
+  const socialSecurityTax = socialSecurityTaxableWages * FICA_RATES_2025.socialSecurity;
+
+  // Medicare tax (1.45% on all wages)
+  const medicareTaxableWages = earnedIncome;
+  const medicareTax = medicareTaxableWages * FICA_RATES_2025.medicare;
+
+  // Additional Medicare tax (0.9% on high earners)
+  const additionalMedicareThreshold = FICA_LIMITS_2025.additionalMedicareThreshold[filingStatus] || 
+                                     FICA_LIMITS_2025.additionalMedicareThreshold.single;
+  const additionalMedicareTaxableWages = Math.max(0, earnedIncome - additionalMedicareThreshold);
+  const additionalMedicareTax = additionalMedicareTaxableWages * FICA_RATES_2025.additionalMedicare;
+
+  const totalFICA = socialSecurityTax + medicareTax + additionalMedicareTax;
+
+  return {
+    socialSecurityTax: Math.round(socialSecurityTax),
+    medicareTax: Math.round(medicareTax),
+    additionalMedicareTax: Math.round(additionalMedicareTax),
+    totalFICA: Math.round(totalFICA),
+    breakdown: {
+      earnedIncome,
+      socialSecurityTaxableWages,
+      medicareTaxableWages,
+      additionalMedicareTaxableWages,
+      socialSecurityRate: FICA_RATES_2025.socialSecurity,
+      medicareRate: FICA_RATES_2025.medicare,
+      additionalMedicareRate: FICA_RATES_2025.additionalMedicare,
+      additionalMedicareThreshold
+    }
+  };
+}
+
+// Get earned income from income sources (wages, self-employment, etc.)
+export function getEarnedIncome(incomeSources) {
+  const earnedIncomeTypes = ['wages', 'self-employment', 'business'];
+  
+  return incomeSources
+    .filter(source => source.enabled && earnedIncomeTypes.includes(source.type))
+    .reduce((sum, source) => {
+      // Handle frequency conversion
+      const yearlyAmount = source.frequency === 'monthly' ? source.amount * 12 : source.amount;
+      return sum + yearlyAmount;
+    }, 0);
+}
+
+// Format FICA tax breakdown for display
+export function formatFICABreakdown(ficaTaxes) {
+  const { breakdown } = ficaTaxes;
+  
+  return {
+    summary: `Total FICA: $${ficaTaxes.totalFICA.toLocaleString()}`,
+    details: [
+      `Social Security: $${ficaTaxes.socialSecurityTax.toLocaleString()} (${(breakdown.socialSecurityRate * 100).toFixed(1)}% on $${breakdown.socialSecurityTaxableWages.toLocaleString()})`,
+      `Medicare: $${ficaTaxes.medicareTax.toLocaleString()} (${(breakdown.medicareRate * 100).toFixed(2)}% on $${breakdown.medicareTaxableWages.toLocaleString()})`,
+      ...(ficaTaxes.additionalMedicareTax > 0 ? [
+        `Additional Medicare: $${ficaTaxes.additionalMedicareTax.toLocaleString()} (${(breakdown.additionalMedicareRate * 100).toFixed(1)}% on wages over $${breakdown.additionalMedicareThreshold.toLocaleString()})`
+      ] : [])
+    ]
+  };
+}
+

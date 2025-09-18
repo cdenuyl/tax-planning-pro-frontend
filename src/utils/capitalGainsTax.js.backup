@@ -1,0 +1,320 @@
+/**
+ * Capital Gains Tax Calculations Module
+ * 
+ * This module provides functions for calculating capital gains taxes,
+ * including long-term capital gains, short-term capital gains, and
+ * qualified dividends taxation.
+ */
+
+/**
+ * Long-term capital gains tax brackets for 2025 by filing status
+ * @type {Object}
+ */
+export const LONG_TERM_CAPITAL_GAINS_BRACKETS_2025 = {
+  single: [
+    { min: 0, max: 48350, rate: 0.00 },      // 0% bracket
+    { min: 48350, max: 533400, rate: 0.15 }, // 15% bracket  
+    { min: 533400, max: Infinity, rate: 0.20 } // 20% bracket
+  ],
+  marriedFilingJointly: [
+    { min: 0, max: 96700, rate: 0.00 },      // 0% bracket
+    { min: 96700, max: 600050, rate: 0.15 }, // 15% bracket
+    { min: 600050, max: Infinity, rate: 0.20 } // 20% bracket
+  ],
+  headOfHousehold: [
+    { min: 0, max: 64750, rate: 0.00 },      // 0% bracket
+    { min: 64750, max: 566700, rate: 0.15 }, // 15% bracket
+    { min: 566700, max: Infinity, rate: 0.20 } // 20% bracket
+  ]
+};
+
+/**
+ * Net Investment Income Tax (NIIT) thresholds for 2025 by filing status
+ * @type {Object}
+ */
+export const NIIT_THRESHOLDS_2025 = {
+  single: 200000,
+  marriedFilingJointly: 250000,
+  headOfHousehold: 200000
+};
+
+/**
+ * NIIT tax rate (3.8%)
+ * @type {number}
+ */
+export const NIIT_RATE = 0.038;
+
+/**
+ * Calculate long-term capital gains tax
+ * 
+ * @param {number} capitalGains - Amount of long-term capital gains
+ * @param {number} ordinaryIncome - Amount of ordinary income
+ * @param {string} filingStatus - Tax filing status ('single', 'marriedFilingJointly', or 'headOfHousehold')
+ * @returns {Object} Tax calculation result with detailed breakdown
+ */
+export function calculateLongTermCapitalGainsTax(capitalGains, ordinaryIncome, filingStatus) {
+  // Handle invalid inputs
+  if (!capitalGains || capitalGains <= 0) {
+    return { 
+      tax: 0, 
+      ordinaryCapitalGainsTax: 0,
+      niitTax: 0,
+      effectiveRate: 0, 
+      marginalRate: 0,
+      bracket: '0%',
+      niitApplies: false,
+      breakdown: {
+        capitalGains: capitalGains || 0,
+        ordinaryIncome: ordinaryIncome || 0,
+        totalIncome: (ordinaryIncome || 0) + (capitalGains || 0),
+        niitThreshold: NIIT_THRESHOLDS_2025[filingStatus] || NIIT_THRESHOLDS_2025.single
+      }
+    };
+  }
+
+  // Get appropriate brackets for filing status
+  const brackets = LONG_TERM_CAPITAL_GAINS_BRACKETS_2025[filingStatus] || LONG_TERM_CAPITAL_GAINS_BRACKETS_2025.single;
+  
+  // Long-term capital gains brackets are based on total taxable income (ordinary + capital gains)
+  const totalIncome = ordinaryIncome + capitalGains;
+  
+  let tax = 0;
+  let remainingGains = capitalGains;
+  let currentIncomeLevel = ordinaryIncome;
+  
+  // Calculate tax by applying appropriate rate to each portion of capital gains
+  for (const bracket of brackets) {
+    if (remainingGains <= 0) break;
+    
+    // Determine how much of this bracket applies to capital gains
+    const bracketStart = Math.max(bracket.min, currentIncomeLevel);
+    const bracketEnd = bracket.max;
+    
+    if (bracketStart >= bracketEnd) continue;
+    
+    const gainsInThisBracket = Math.min(remainingGains, bracketEnd - bracketStart);
+    
+    if (gainsInThisBracket > 0) {
+      tax += gainsInThisBracket * bracket.rate;
+      remainingGains -= gainsInThisBracket;
+      currentIncomeLevel += gainsInThisBracket;
+    }
+  }
+  
+  // Calculate Net Investment Income Tax (NIIT) if applicable
+  const niitThreshold = NIIT_THRESHOLDS_2025[filingStatus] || NIIT_THRESHOLDS_2025.single;
+  let niitTax = 0;
+  
+  if (totalIncome > niitThreshold) {
+    const niitableIncome = Math.min(capitalGains, totalIncome - niitThreshold);
+    niitTax = niitableIncome * NIIT_RATE;
+  }
+  
+  const totalTax = tax + niitTax;
+  const effectiveRate = capitalGains > 0 ? totalTax / capitalGains : 0;
+  
+  // Determine primary bracket
+  const primaryBracket = brackets.find(b => 
+    ordinaryIncome >= b.min && ordinaryIncome < b.max
+  ) || brackets[brackets.length - 1];
+  
+  return {
+    tax: Math.round(totalTax),
+    ordinaryCapitalGainsTax: Math.round(tax),
+    niitTax: Math.round(niitTax),
+    effectiveRate: effectiveRate,
+    marginalRate: primaryBracket.rate,
+    bracket: `${(primaryBracket.rate * 100).toFixed(0)}%`,
+    niitApplies: niitTax > 0,
+    breakdown: {
+      capitalGains: capitalGains,
+      ordinaryIncome: ordinaryIncome,
+      totalIncome: totalIncome,
+      niitThreshold: niitThreshold
+    }
+  };
+}
+
+/**
+ * Calculate tax on a given income amount using provided tax brackets
+ * 
+ * @param {number} income - Income amount to calculate tax on
+ * @param {Array} taxBrackets - Array of tax brackets with min, max, and rate properties
+ * @returns {number} Calculated tax amount
+ */
+function calculateTaxOnIncome(income, taxBrackets) {
+  // Handle invalid inputs
+  if (!income || income <= 0 || !taxBrackets || !Array.isArray(taxBrackets) || taxBrackets.length === 0) {
+    return 0;
+  }
+  
+  let tax = 0;
+  let remainingIncome = income;
+  
+  for (const bracket of taxBrackets) {
+    if (remainingIncome <= 0) break;
+    
+    const taxableInThisBracket = Math.min(remainingIncome, bracket.max - bracket.min);
+    
+    if (taxableInThisBracket > 0) {
+      tax += taxableInThisBracket * bracket.rate;
+      remainingIncome -= taxableInThisBracket;
+    }
+    
+    if (bracket.max === Infinity) break;
+  }
+  
+  return tax;
+}
+
+/**
+ * Calculate short-term capital gains tax (taxed as ordinary income)
+ * 
+ * @param {number} capitalGains - Amount of short-term capital gains
+ * @param {number} ordinaryIncome - Amount of ordinary income
+ * @param {string} filingStatus - Tax filing status ('single', 'marriedFilingJointly', or 'headOfHousehold')
+ * @param {Array} taxBrackets - Array of tax brackets with min, max, and rate properties
+ * @returns {Object} Tax calculation result with detailed breakdown
+ */
+export function calculateShortTermCapitalGainsTax(capitalGains, ordinaryIncome, filingStatus, taxBrackets) {
+  // Handle invalid inputs
+  if (!capitalGains || capitalGains <= 0) {
+    return { 
+      tax: 0, 
+      ordinaryCapitalGainsTax: 0,
+      niitTax: 0,
+      effectiveRate: 0, 
+      marginalRate: 0,
+      bracket: '0%',
+      niitApplies: false,
+      breakdown: {
+        capitalGains: capitalGains || 0,
+        ordinaryIncome: ordinaryIncome || 0,
+        totalIncome: (ordinaryIncome || 0) + (capitalGains || 0),
+        niitThreshold: NIIT_THRESHOLDS_2025[filingStatus] || NIIT_THRESHOLDS_2025.single
+      }
+    };
+  }
+
+  // Validate tax brackets parameter
+  if (!taxBrackets || !Array.isArray(taxBrackets) || taxBrackets.length === 0) {
+    console.warn('Invalid tax brackets provided to calculateShortTermCapitalGainsTax');
+    return { 
+      tax: 0, 
+      ordinaryCapitalGainsTax: 0,
+      niitTax: 0,
+      effectiveRate: 0, 
+      marginalRate: 0,
+      bracket: '0%',
+      niitApplies: false,
+      breakdown: {
+        capitalGains: capitalGains,
+        ordinaryIncome: ordinaryIncome,
+        totalIncome: ordinaryIncome + capitalGains,
+        niitThreshold: NIIT_THRESHOLDS_2025[filingStatus] || NIIT_THRESHOLDS_2025.single
+      }
+    };
+  }
+
+  // Short-term capital gains are taxed as ordinary income
+  // Calculate tax on (ordinary income + short-term gains) minus tax on just ordinary income
+  const ordinaryTax = calculateTaxOnIncome(ordinaryIncome, taxBrackets);
+  const totalTax = calculateTaxOnIncome(ordinaryIncome + capitalGains, taxBrackets);
+  
+  const capitalGainsTax = totalTax - ordinaryTax;
+  
+  // Find marginal bracket for the capital gains
+  const totalIncome = ordinaryIncome + capitalGains;
+  const marginalBracket = taxBrackets.find(bracket => 
+    totalIncome > bracket.min && totalIncome <= bracket.max
+  ) || taxBrackets[taxBrackets.length - 1];
+  
+  // Add Net Investment Income Tax (NIIT) if applicable
+  const niitThreshold = NIIT_THRESHOLDS_2025[filingStatus] || NIIT_THRESHOLDS_2025.single;
+  let niitTax = 0;
+  
+  if (totalIncome > niitThreshold) {
+    const niitableIncome = Math.min(capitalGains, totalIncome - niitThreshold);
+    niitTax = niitableIncome * NIIT_RATE;
+  }
+  
+  const totalCapitalGainsTax = capitalGainsTax + niitTax;
+  const effectiveRate = capitalGains > 0 ? totalCapitalGainsTax / capitalGains : 0;
+  
+  return {
+    tax: Math.round(totalCapitalGainsTax),
+    ordinaryCapitalGainsTax: Math.round(capitalGainsTax),
+    niitTax: Math.round(niitTax),
+    effectiveRate: effectiveRate,
+    marginalRate: marginalBracket ? marginalBracket.rate : 0,
+    bracket: marginalBracket ? `${(marginalBracket.rate * 100).toFixed(0)}%` : '0%',
+    niitApplies: niitTax > 0,
+    breakdown: {
+      capitalGains: capitalGains,
+      ordinaryIncome: ordinaryIncome,
+      totalIncome: totalIncome,
+      niitThreshold: niitThreshold
+    }
+  };
+}
+
+/**
+ * Get capital gains information for display
+ * 
+ * @param {number} longTermGains - Amount of long-term capital gains
+ * @param {number} shortTermGains - Amount of short-term capital gains
+ * @param {number} ordinaryIncome - Amount of ordinary income
+ * @param {string} filingStatus - Tax filing status ('single', 'marriedFilingJointly', or 'headOfHousehold')
+ * @param {Array} taxBrackets - Array of tax brackets with min, max, and rate properties
+ * @returns {Object} Comprehensive capital gains information with detailed breakdown
+ */
+export function getCapitalGainsInfo(filingStatus, longTermGains = 0, shortTermGains = 0, ordinaryIncome = 0, taxBrackets = []) {
+  // If called with just filingStatus (old API), return brackets info
+  if (arguments.length === 1) {
+    return {
+      brackets: LONG_TERM_CAPITAL_GAINS_BRACKETS_2025[filingStatus] || LONG_TERM_CAPITAL_GAINS_BRACKETS_2025.single,
+      niitThreshold: NIIT_THRESHOLDS_2025[filingStatus] || NIIT_THRESHOLDS_2025.single
+    };
+  }
+  
+  // Calculate taxes for both types of capital gains
+  const longTermTax = calculateLongTermCapitalGainsTax(longTermGains, ordinaryIncome, filingStatus);
+  const shortTermTax = calculateShortTermCapitalGainsTax(shortTermGains, ordinaryIncome + longTermGains, filingStatus, taxBrackets);
+  
+  const totalGains = longTermGains + shortTermGains;
+  const totalTax = longTermTax.tax + shortTermTax.tax;
+  
+  return {
+    longTerm: {
+      gains: longTermGains,
+      ...longTermTax
+    },
+    shortTerm: {
+      gains: shortTermGains,
+      ...shortTermTax
+    },
+    total: {
+      gains: totalGains,
+      tax: totalTax,
+      effectiveRate: totalGains > 0 ? totalTax / totalGains : 0,
+      niitTax: longTermTax.niitTax + shortTermTax.niitTax,
+      niitApplies: longTermTax.niitApplies || shortTermTax.niitApplies
+    },
+    brackets: LONG_TERM_CAPITAL_GAINS_BRACKETS_2025[filingStatus] || LONG_TERM_CAPITAL_GAINS_BRACKETS_2025.single,
+    niitThreshold: NIIT_THRESHOLDS_2025[filingStatus] || NIIT_THRESHOLDS_2025.single
+  };
+}
+
+/**
+ * Calculate qualified dividends tax (same as long-term capital gains)
+ * 
+ * @param {number} dividends - Amount of qualified dividends
+ * @param {number} ordinaryIncome - Amount of ordinary income
+ * @param {string} filingStatus - Tax filing status ('single', 'marriedFilingJointly', or 'headOfHousehold')
+ * @returns {Object} Tax calculation result with detailed breakdown
+ */
+export function calculateQualifiedDividendsTax(dividends, ordinaryIncome, filingStatus) {
+  // Qualified dividends are taxed at the same rates as long-term capital gains
+  return calculateLongTermCapitalGainsTax(dividends, ordinaryIncome, filingStatus);
+}
+
