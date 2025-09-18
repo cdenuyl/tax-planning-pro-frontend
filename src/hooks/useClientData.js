@@ -124,7 +124,8 @@ export const useClientData = () => {
 
     try {
       // Ensure user_id is set for RLS
-      const { data: { user }, error: userError } = await supabase.auth.getUser();
+      const { data, error: userError } = await supabase.auth.getUser();
+      const user = data?.user;
       if (userError || !user) throw new Error('User not authenticated');
 
       const { data: newClient, error: createError } = await supabase

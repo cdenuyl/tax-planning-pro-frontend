@@ -33,8 +33,9 @@ export const authAPI = {
 
   getProfile: async () => {
     try {
-      const { data: { user }, error } = await supabase.auth.getUser();
+      const { data, error } = await supabase.auth.getUser();
       if (error) throw error;
+      const user = data?.user || null;
       return { success: true, user };
     } catch (error) {
       console.error('Get profile error:', error);
@@ -205,8 +206,8 @@ export const apiUtils = {
   },
 
   getCurrentUser: async () => {
-    const { data: { user } } = await supabase.auth.getUser();
-    return user;
+    const { data } = await supabase.auth.getUser();
+    return data?.user || null;
   },
 
   clearAuth: async () => {
