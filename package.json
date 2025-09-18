@@ -88,10 +88,13 @@
     "globals": "^15.8.0",
     "jsdom": "^24.1.0",
     "postcss": "^8.4.39",
-    "tailwindcss": "^3.4.4",
+    "autoprefixer": "^10.4.19",
+    "tailwindcss": {},
     "tw-animate-css": "^1.2.9",
     "vite": "^5.3.3",
     "vitest": "^1.6.0"
   },
   "packageManager": "pnpm@9.5.0+sha512.140036e3f27c03836f23c729799cd07afb249f6b55c503663ae23170f86d8bdc07150e9e6744e4d716bb4b0b5e36f5a8858c2bc0cd7830df0423b34fa9b2f4bb"
 }
+
+
