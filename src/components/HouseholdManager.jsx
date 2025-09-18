@@ -43,6 +43,14 @@ const HouseholdManager = ({
   onHouseholdsUpdate,
   onClientUpdate 
 }) => {
+  const [showCreateDialog, setShowCreateDialog] = useState(false);
+  const [showAddMemberDialog, setShowAddMemberDialog] = useState(false);
+  const [householdName, setHouseholdName] = useState('');
+  const [searchTerm, setSearchTerm] = useState('');
+  const [selectedClient, setSelectedClient] = useState(null);
+  const [selectedRelationship, setSelectedRelationship] = useState('spouse');
+  const [selectedTaxRole, setSelectedTaxRole] = useState('spouse');
+
   // Early return if required props are missing
   if (!client || !client.profile || !onHouseholdsUpdate || !onClientUpdate) {
     return (
@@ -53,14 +61,6 @@ const HouseholdManager = ({
       </Card>
     );
   }
-
-  const [showCreateDialog, setShowCreateDialog] = useState(false);
-  const [showAddMemberDialog, setShowAddMemberDialog] = useState(false);
-  const [householdName, setHouseholdName] = useState('');
-  const [searchTerm, setSearchTerm] = useState('');
-  const [selectedClient, setSelectedClient] = useState(null);
-  const [selectedRelationship, setSelectedRelationship] = useState('spouse');
-  const [selectedTaxRole, setSelectedTaxRole] = useState('spouse');
   
   // Find household for current client (using stable calculation)
   const clientHousehold = households.find(household => 
