@@ -75,7 +75,7 @@ const TaxPlanningApp = () => {
   // Show login if not authenticated
   if (!isAuthenticated) {
     return <Login onLogin={handleLogin} />;
-  }}
+  }
 
   // Legacy state management for backward compatibility
   const [taxpayer, setTaxpayer] = useState({
