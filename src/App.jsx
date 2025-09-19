@@ -36,8 +36,12 @@ const TaxPlanningApp = () => {
     selectScenario,
   } = useClientData();
 
-  const [activeTab, setActiveTab] = useState('client');
+  const [activeTab, setActiveTab] = useState("client");
   const [scenarios, setScenarios] = useState([]);
+
+  const handleLogin = useCallback(() => {
+    setActiveTab("client");
+  }, []);
 
   // Initialize data when authenticated
   useEffect(() => {
@@ -68,9 +72,6 @@ const TaxPlanningApp = () => {
       </div>
     );
   }
-  const handleLogin = useCallback(() => {
-    setActiveTab("client");
-  }, []);
 
   // Show login if not authenticated
   if (!isAuthenticated) {
