@@ -113,7 +113,10 @@ const ClientManagementApp = () => {
       if (clientModalMode === 'create') {
         // Create new client
         const newClientData = {
-          user_id: user.id, // Link to current user
+          user_id: user?.id, // Link to current user
+        };
+        console.log("Creating client with user_id:", user?.id);
+        const result = await clientAPI.createClient(newClientData);
           taxpayer_first_name: profileData.taxpayer_first_name || '',
           taxpayer_last_name: profileData.taxpayer_last_name || '',
           taxpayer_email: profileData.taxpayer_email || null,
