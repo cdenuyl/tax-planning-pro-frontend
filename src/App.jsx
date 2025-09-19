@@ -10,6 +10,35 @@ import ScenarioSelector from './components/ScenarioSelector';
 
 // Main application component (wrapped by AuthProvider)
 const TaxPlanningApp = () => {
+  const [activeTab, setActiveTab] = useState("client");
+  const [scenarios, setScenarios] = useState([]);
+
+  // Legacy state management for backward compatibility
+  const [taxpayer, setTaxpayer] = useState({
+    firstName: '',
+    lastName: '',
+    dateOfBirth: '',
+    email: '',
+    fraAmount: 0,
+  });
+
+  const [spouse, setSpouse] = useState({
+    firstName: '',
+    lastName: '',
+    dateOfBirth: '',
+    email: '',
+    fraAmount: 0,
+  });
+
+  const [incomeSources, setIncomeSourcesState] = useState([]);
+  const [assets, setAssetsState] = useState([]);
+  const [deductions, setDeductionsState] = useState({});
+  const [settings, setSettingsState] = useState({});
+
+  const handleLogin = useCallback(() => {
+    setActiveTab("client");
+  }, []);
+
   const { isAuthenticated, isLoading: authLoading, user, logout } = useAuth();
   const {
     currentClient,
@@ -35,13 +64,6 @@ const TaxPlanningApp = () => {
     deleteScenario,
     selectScenario,
   } = useClientData();
-
-  const handleLogin = useCallback(() => {
-    setActiveTab("client");
-  }, []);
-
-  const [activeTab, setActiveTab] = useState("client");
-  const [scenarios, setScenarios] = useState([]);
 
   // Initialize data when authenticated
   useEffect(() => {
@@ -76,28 +98,6 @@ const TaxPlanningApp = () => {
   if (!isAuthenticated) {
     return <Login onLogin={handleLogin} />;
   }
-
-  // Legacy state management for backward compatibility
-  const [taxpayer, setTaxpayer] = useState({
-    firstName: '',
-    lastName: '',
-    dateOfBirth: '',
-    email: '',
-    fraAmount: 0,
-  });
-
-  const [spouse, setSpouse] = useState({
-    firstName: '',
-    lastName: '',
-    dateOfBirth: '',
-    email: '',
-    fraAmount: 0,
-  });
-
-  const [incomeSources, setIncomeSourcesState] = useState([]);
-  const [assets, setAssetsState] = useState([]);
-  const [deductions, setDeductionsState] = useState({});
-  const [settings, setSettingsState] = useState({});
 
   // Update local state when scenario changes
   useEffect(() => {
