@@ -49,16 +49,12 @@ const Login = () => {
 
     const result = await login(formData.email, formData.password);
     
-    if (result.success && onLogin) {
-      onLogin();
-    }
+    // The parent component (TaxPlanningApp) now handles navigation based on isAuthenticated state
   };
 
   const handleDemoLogin = async () => {
     const result = await login('admin@tax-on-a-me.com', 'TaxPlan2024!');
-    if (result.success && onLogin) {
-      onLogin();
-    }
+    // The parent component (TaxPlanningApp) now handles navigation based on isAuthenticated state
   };
 
   return (
