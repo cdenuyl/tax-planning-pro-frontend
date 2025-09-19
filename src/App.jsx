@@ -68,12 +68,11 @@ const TaxPlanningApp = () => {
       </div>
     );
   }
-
-  // Show login if not authenticated
   const handleLogin = useCallback(() => {
     setActiveTab("client");
   }, []);
 
+  // Show login if not authenticated
   if (!isAuthenticated) {
     return <Login onLogin={handleLogin} />;
   }
