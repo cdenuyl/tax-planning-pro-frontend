@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { useAuth } from '../contexts/AuthContext';
 import { apiUtils } from '../services/api';
 
@@ -21,9 +21,11 @@ const Login = ({ onLogin }) => {
   }, []);
 
   // Redirect if already authenticated
+  const hasCalledOnLogin = useRef(false);
   useEffect(() => {
-    if (isAuthenticated && onLogin) {
+    if (isAuthenticated && onLogin && !hasCalledOnLogin.current) {
       onLogin();
+      hasCalledOnLogin.current = true;
     }
   }, [isAuthenticated, onLogin]);
 
