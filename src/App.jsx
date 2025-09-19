@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import { AuthProvider, useAuth } from './contexts/AuthContext';
 import { useClientData } from './hooks/useClientData';
 import Login from './components/Login';
@@ -70,8 +70,12 @@ const TaxPlanningApp = () => {
   }
 
   // Show login if not authenticated
+  const handleLogin = useCallback(() => {
+    setActiveTab("client");
+  }, []);
+
   if (!isAuthenticated) {
-    return <Login onLogin={() => setActiveTab('client')} />;
+    return <Login onLogin={handleLogin} />;
   }
 
   // Legacy state management for backward compatibility
