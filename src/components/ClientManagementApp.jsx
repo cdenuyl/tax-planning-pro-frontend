@@ -61,7 +61,7 @@ const ClientManagementApp = () => {
     if (user && !authLoading) {
       fetchClients();
     }
-  }, [user, authLoading, fetchClients]);
+  }, [user, authLoading]); // Removed fetchClients to prevent infinite loop
 
   // Handle client selection
   const handleClientSelect = (clientId) => {
