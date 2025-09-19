@@ -97,6 +97,14 @@ const TaxPlanningApp = () => {
     return <Login />;
   }
 
+
+
+
+
+
+
+
+
   // Update local state when scenario changes
   useEffect(() => {
     if (currentScenario) {
