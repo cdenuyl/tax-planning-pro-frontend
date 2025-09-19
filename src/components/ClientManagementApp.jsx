@@ -131,12 +131,7 @@ const ClientManagementApp = () => {
           setActiveClientId(result.client.id);
           fetchClients();
         } else {
-          // Check for 409 conflict (duplicate email)
-          if (result.error && result.error.includes("duplicate key value violates unique constraint")) {
-            setError("A client with this email already exists. Please use a different email or edit the existing client.");
-          } else {
-            setError(result.error);
-          }
+          setError(result.error);
         }
       } else if (clientModalMode === 'edit') {
         // Update existing client
