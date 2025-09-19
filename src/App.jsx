@@ -84,7 +84,6 @@ const TaxPlanningApp = () => {
     dateOfBirth: '',
     email: '',
     fraAmount: 0,
-    ...currentScenario?.taxpayerData
   });
 
   const [spouse, setSpouse] = useState({
@@ -93,13 +92,12 @@ const TaxPlanningApp = () => {
     dateOfBirth: '',
     email: '',
     fraAmount: 0,
-    ...currentScenario?.spouseData
   });
 
-  const [incomeSources, setIncomeSourcesState] = useState(currentScenario?.incomeSources || []);
-  const [assets, setAssetsState] = useState(currentScenario?.assets || []);
-  const [deductions, setDeductionsState] = useState(currentScenario?.deductions || {});
-  const [settings, setSettingsState] = useState(currentScenario?.settings || {});
+  const [incomeSources, setIncomeSourcesState] = useState([]);
+  const [assets, setAssetsState] = useState([]);
+  const [deductions, setDeductionsState] = useState({});
+  const [settings, setSettingsState] = useState({});
 
   // Update local state when scenario changes
   useEffect(() => {
@@ -110,6 +108,14 @@ const TaxPlanningApp = () => {
       setAssetsState(currentScenario.assets || []);
       setDeductionsState(currentScenario.deductions || {});
       setSettingsState(currentScenario.settings || {});
+    } else {
+      // Clear states if no current scenario
+      setTaxpayer({ firstName: '', lastName: '', dateOfBirth: '', email: '', fraAmount: 0 });
+      setSpouse({ firstName: '', lastName: '', dateOfBirth: '', email: '', fraAmount: 0 });
+      setIncomeSourcesState([]);
+      setAssetsState([]);
+      setDeductionsState({});
+      setSettingsState({});
     }
   }, [currentScenario]);
 
