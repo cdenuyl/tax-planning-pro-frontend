@@ -36,12 +36,12 @@ const TaxPlanningApp = () => {
     selectScenario,
   } = useClientData();
 
-  const [activeTab, setActiveTab] = useState("client");
-  const [scenarios, setScenarios] = useState([]);
-
   const handleLogin = useCallback(() => {
     setActiveTab("client");
   }, []);
+
+  const [activeTab, setActiveTab] = useState("client");
+  const [scenarios, setScenarios] = useState([]);
 
   // Initialize data when authenticated
   useEffect(() => {
@@ -61,7 +61,6 @@ const TaxPlanningApp = () => {
     }
   }, [currentClient]);
 
-  // Show loading screen during authentication check
   if (authLoading) {
     return (
       <div className="min-h-screen bg-gray-50 flex items-center justify-center">
