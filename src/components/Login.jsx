@@ -2,7 +2,7 @@ import React, { useState, useEffect, useRef } from 'react';
 import { useAuth } from '../contexts/AuthContext';
 import { apiUtils } from '../services/api';
 
-const Login = ({ onLogin }) => {
+const Login = () => {
   const { login, isLoading, error, clearError, isAuthenticated } = useAuth();
   const [formData, setFormData] = useState({
     email: '',
@@ -21,13 +21,7 @@ const Login = ({ onLogin }) => {
   }, []);
 
   // Redirect if already authenticated
-  const hasCalledOnLogin = useRef(false);
-  useEffect(() => {
-    if (isAuthenticated && onLogin && !hasCalledOnLogin.current) {
-      onLogin();
-      hasCalledOnLogin.current = true;
-    }
-  }, [isAuthenticated, onLogin]);
+
 
   // Clear error when component unmounts or form changes
   useEffect(() => {
