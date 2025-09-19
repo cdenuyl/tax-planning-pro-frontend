@@ -41,18 +41,18 @@ const TaxPlanningApp = () => {
 
   // Legacy state management for backward compatibility
   const [taxpayer, setTaxpayer] = useState({
-    firstName: ",
-    lastName: ",
-    dateOfBirth: ",
-    email: ",
+    firstName: '',
+    lastName: '',
+    dateOfBirth: '',
+    email: '',
     fraAmount: 0,
   });
 
   const [spouse, setSpouse] = useState({
-    firstName: ",
-    lastName: ",
-    dateOfBirth: ",
-    email: ",
+    firstName: '',
+    lastName: '',
+    dateOfBirth: '',
+    email: '',
     fraAmount: 0,
   });
 
