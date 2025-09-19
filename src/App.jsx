@@ -61,8 +61,6 @@ const TaxPlanningApp = () => {
   const [deductions, setDeductionsState] = useState({});
   const [settings, setSettingsState] = useState({});
 
-
-
   // Initialize data when authenticated
   useEffect(() => {
     if (isAuthenticated) {
@@ -80,30 +78,6 @@ const TaxPlanningApp = () => {
       setScenarios([]);
     }
   }, [currentClient]);
-
-  if (authLoading) {
-    return (
-      <div className="min-h-screen bg-gray-50 flex items-center justify-center">
-        <div className="text-center">
-          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mx-auto"></div>
-          <p className="mt-4 text-gray-600">Loading Tax Planning Pro...</p>
-        </div>
-      </div>
-    );
-  }
-
-  // Show login if not authenticated
-  if (!isAuthenticated) {
-    return <Login />;
-  }
-
-
-
-
-
-
-
-
 
   // Update local state when scenario changes
   useEffect(() => {
@@ -167,6 +141,22 @@ const TaxPlanningApp = () => {
     await logout();
     setActiveTab('client');
   };
+
+  if (authLoading) {
+    return (
+      <div className="min-h-screen bg-gray-50 flex items-center justify-center">
+        <div className="text-center">
+          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mx-auto"></div>
+          <p className="mt-4 text-gray-600">Loading Tax Planning Pro...</p>
+        </div>
+      </div>
+    );
+  }
+
+  // Show login if not authenticated
+  if (!isAuthenticated) {
+    return <Login />;
+  }
 
   return (
     <div className="min-h-screen bg-gray-50">
