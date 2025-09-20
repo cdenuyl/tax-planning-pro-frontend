@@ -198,9 +198,9 @@ export const ONE_BIG_BEAUTIFUL_BILL_PROVISIONS_2025 = {
  * @returns {string} Normalized filing status
  */
 export function normalizeFilingStatusEnhanced(filingStatus) {
-  if (!filingStatus) return FILING_STATUS_ENHANCED.SINGLE;
+  if (typeof filingStatus !== 'string' || !filingStatus) return FILING_STATUS_ENHANCED.SINGLE;
   
-  const normalized = filingStatus.toLowerCase().replace(/[^a-z]/g, '');
+  const normalized = filingStatus.toLowerCase().replace(/[^a-z]/g, "");
   
   switch (normalized) {
     case 'single':
