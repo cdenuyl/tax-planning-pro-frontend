@@ -148,6 +148,9 @@ function analyzeIrmaaOptimization(incomeSources, taxpayer, spouse, deductions, a
 
 // Enhanced Roth Conversion Analysis with IRMAA and Opportunity Cost Considerations
 function analyzeRothConversions(incomeSources, taxpayer, spouse, deductions, appSettings, currentCalc) {
+  if (!Array.isArray(incomeSources)) {
+    incomeSources = [];
+  }
   const currentAge = taxpayer.age;
   const currentIncome = currentCalc.totalIncome;
   const currentMarginalRate = currentCalc.federalMarginalRate;
