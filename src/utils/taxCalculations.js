@@ -125,6 +125,12 @@ export function getStandardDeduction(filingStatus, taxpayerAge = null, spouseAge
 
 // Helper function to calculate early withdrawal penalties
 export function calculateEarlyWithdrawalPenalties(incomeSources, taxpayerAge, spouseAge = null) {
+  if (!Array.isArray(incomeSources)) {
+    return {
+      totalPenalties: 0,
+      penaltyDetails: []
+    };
+  }
   // Helper function to get yearly amount (convert monthly to yearly if needed)
   const getYearlyAmount = (source) => {
     if (source.frequency === 'monthly') {
