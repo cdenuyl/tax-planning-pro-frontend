@@ -422,7 +422,11 @@ function calculateRothIRATaxation(source, taxpayerAge, spouseAge) {
   };
 }
 
-export function calculateComprehensiveTaxes(incomeSources, taxpayerAge = 65, spouseAge = null, filingStatus = 'single', deductions = null, appSettings = {}) {
+export function calculateComprehensiveTaxes(incomeSources = [], taxpayerAge = 65, spouseAge = null, filingStatus = 'single', deductions = null, appSettings = {}) {
+  // Ensure incomeSources is an array
+  if (!Array.isArray(incomeSources)) {
+    incomeSources = [];
+  }
 
   // Calculate early withdrawal penalties
   const penaltyCalculation = calculateEarlyWithdrawalPenalties(incomeSources, taxpayerAge, spouseAge);
