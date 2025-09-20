@@ -1,5 +1,5 @@
-import React, { createContext, useContext, useReducer, useEffect, useCallback } from 'react';
-import { authAPI, apiUtils, supabase } from '../services/api';
+import React, { createContext, useContext, useReducer, useEffect } from 'react';
+import { authAPI, apiUtils } from '../services/api';
 
 // Initial state
 const initialState = {
@@ -82,47 +82,43 @@ const AuthContext = createContext();
 export const AuthProvider = ({ children }) => {
   const [state, dispatch] = useReducer(authReducer, initialState);
 
-  // Function to update user state
-  const updateUserState = useCallback(async () => {
-    dispatch({ type: AUTH_ACTIONS.SET_LOADING, payload: true });
-    try {
-      const { user } = await apiUtils.getCurrentUser();
-      dispatch({
-        type: AUTH_ACTIONS.SET_USER,
-        payload: { user: user },
-      });
-    } catch (error) {
-      console.error('Error getting current user:', error);
-      dispatch({
-        type: AUTH_ACTIONS.SET_USER,
-        payload: { user: null },
-      });
-    } finally {
-      dispatch({ type: AUTH_ACTIONS.SET_LOADING, payload: false });
-    }
-  }, []);
-
-  // Check for existing authentication on mount and listen to auth changes
+  // Check for existing authentication on mount
   useEffect(() => {
-    updateUserState(); // Initial check
-
-    const { data: authListener } = supabase.auth.onAuthStateChange((event, session) => {
-      if (event === 'SIGNED_IN' || event === 'TOKEN_REFRESHED') {
+    const checkAuth = async () => {
+      try {
+        if (apiUtils.isAuthenticated()) {
+          const result = await authAPI.getProfile();
+          if (result.success) {
+            dispatch({
+              type: AUTH_ACTIONS.SET_USER,
+              payload: { user: result.user },
+            });
+          } else {
+            // Token is invalid, clear auth
+            apiUtils.clearAuth();
+            dispatch({
+              type: AUTH_ACTIONS.SET_USER,
+              payload: { user: null },
+            });
+          }
+        } else {
+          dispatch({
+            type: AUTH_ACTIONS.SET_USER,
+            payload: { user: null },
+          });
+        }
+      } catch (error) {
+        console.error('Auth check error:', error);
+        apiUtils.clearAuth();
         dispatch({
           type: AUTH_ACTIONS.SET_USER,
-          payload: { user: session?.user || null },
+          payload: { user: null },
         });
-        dispatch({ type: AUTH_ACTIONS.LOGIN_SUCCESS, payload: { user: session?.user || null } });
-      } else if (event === 'SIGNED_OUT') {
-        dispatch({ type: AUTH_ACTIONS.LOGOUT });
       }
-      dispatch({ type: AUTH_ACTIONS.SET_LOADING, payload: false });
-    });
-
-    return () => {
-      authListener.subscription.unsubscribe();
     };
-  }, [updateUserState]);
+
+    checkAuth();
+  }, []);
 
   // Login function
   const login = async (email, password) => {
@@ -132,7 +128,10 @@ export const AuthProvider = ({ children }) => {
       const result = await authAPI.login(email, password);
       
       if (result.success) {
-        // User state will be updated by onAuthStateChange listener
+        dispatch({
+          type: AUTH_ACTIONS.LOGIN_SUCCESS,
+          payload: { user: result.user },
+        });
         return { success: true };
       } else {
         dispatch({
@@ -142,7 +141,7 @@ export const AuthProvider = ({ children }) => {
         return { success: false, error: result.error };
       }
     } catch (error) {
-      const errorMessage = error.message || 'Login failed. Please try again.';
+      const errorMessage = 'Login failed. Please try again.';
       dispatch({
         type: AUTH_ACTIONS.LOGIN_FAILURE,
         payload: { error: errorMessage },
@@ -155,18 +154,19 @@ export const AuthProvider = ({ children }) => {
   const logout = async () => {
     try {
       await authAPI.logout();
-      // User state will be updated by onAuthStateChange listener
     } catch (error) {
       console.error('Logout error:', error);
+    } finally {
+      dispatch({ type: AUTH_ACTIONS.LOGOUT });
     }
   };
 
-  // Register function
-  const register = async (email, password) => {
+  // Register function (admin only)
+  const register = async (userData) => {
     dispatch({ type: AUTH_ACTIONS.SET_LOADING, payload: true });
 
     try {
-      const result = await authAPI.register(email, password);
+      const result = await authAPI.register(userData);
       
       if (result.success) {
         dispatch({ type: AUTH_ACTIONS.SET_LOADING, payload: false });
@@ -177,7 +177,7 @@ export const AuthProvider = ({ children }) => {
       }
     } catch (error) {
       dispatch({ type: AUTH_ACTIONS.SET_LOADING, payload: false });
-      return { success: false, error: error.message || 'Registration failed. Please try again.' };
+      return { success: false, error: 'Registration failed. Please try again.' };
     }
   };
 
@@ -186,10 +186,9 @@ export const AuthProvider = ({ children }) => {
     dispatch({ type: AUTH_ACTIONS.CLEAR_ERROR });
   };
 
-  // Check if user has specific role (Supabase doesn't have built-in roles like this, might need custom implementation)
+  // Check if user has specific role
   const hasRole = (role) => {
-    // Placeholder: Supabase user metadata can be used for roles
-    return state.user?.user_metadata?.role === role;
+    return state.user?.role === role;
   };
 
   // Check if user is admin
@@ -238,5 +237,4 @@ export const useAuth = () => {
 };
 
 export default AuthContext;
-
 

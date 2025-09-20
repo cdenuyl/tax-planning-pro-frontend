@@ -1,23 +1,30 @@
 import { useState, useEffect, useCallback, useRef } from 'react';
-import { supabase } from '../services/api'; // Import the Supabase client directly
+import { clientAPI, scenarioAPI } from '../services/api';
 
 // Custom hook for managing client data with auto-save functionality
-export const useClientData = () => {
+export const useClientData = (initialClientId = null) => {
   const [currentClient, setCurrentClient] = useState(null);
   const [currentScenario, setCurrentScenario] = useState(null);
   const [clients, setClients] = useState([]);
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState(null);
   const [hasUnsavedChanges, setHasUnsavedChanges] = useState(false);
-
+  
   // Auto-save timer ref
   const autoSaveTimer = useRef(null);
-  const lastSavedScenarioData = useRef(null);
+  const lastSavedData = useRef(null);
 
   // Load clients on mount
   useEffect(() => {
     loadClients();
   }, []);
+
+  // Load specific client if provided
+  useEffect(() => {
+    if (initialClientId) {
+      loadClient(initialClientId);
+    }
+  }, [initialClientId]);
 
   // Auto-save functionality
   const scheduleAutoSave = useCallback((data) => {
@@ -28,22 +35,11 @@ export const useClientData = () => {
     autoSaveTimer.current = setTimeout(async () => {
       if (currentScenario && data) {
         try {
-          // Update the current scenario in Supabase
-          const { data: updatedScenario, error: updateError } = await supabase
-            .from('scenarios')
-            .update(data)
-            .eq('id', currentScenario.id)
-            .select();
-
-          if (updateError) throw updateError;
-
-          lastSavedScenarioData.current = data;
+          await scenarioAPI.updateScenario(currentScenario.id, data);
+          lastSavedData.current = data;
           setHasUnsavedChanges(false);
-          // Optionally, update currentScenario state if needed
-          // setCurrentScenario(prev => ({ ...prev, ...updatedScenario[0] }));
         } catch (error) {
           console.error('Auto-save failed:', error);
-          setError('Auto-save failed: ' + error.message);
         }
       }
     }, 2000); // Auto-save after 2 seconds of inactivity
@@ -53,65 +49,49 @@ export const useClientData = () => {
   const loadClients = async () => {
     setIsLoading(true);
     setError(null);
-
+    
     try {
-      const { data, error: fetchError } = await supabase
-        .from('clients')
-        .select('*'); // Select all columns for clients
-
-      if (fetchError) throw fetchError;
-
-      setClients(data || []);
+      const result = await clientAPI.getClients();
+      if (result.success) {
+        setClients(result.clients);
+      } else {
+        setError(result.error);
+      }
     } catch (error) {
-      setError('Failed to load clients: ' + error.message);
+      setError('Failed to load clients');
     } finally {
       setIsLoading(false);
     }
   };
 
-  // Select a client and load its default scenario
-  const selectClient = async (clientId) => {
+  // Load specific client and their default scenario
+  const loadClient = async (clientId) => {
     setIsLoading(true);
     setError(null);
-
+    
     try {
-      const { data: clientData, error: clientError } = await supabase
-        .from('clients')
-        .select('*')
-        .eq('id', clientId)
-        .single();
-
-      if (clientError) throw clientError;
-
-      // Fetch scenarios for the selected client
-      const { data: scenariosData, error: scenariosError } = await supabase
-        .from('scenarios')
-        .select('*')
-        .eq('client_id', clientId);
-
-      if (scenariosError) throw scenariosError;
-
-      const clientWithScenarios = { ...clientData, scenarios: scenariosData || [] };
-      setCurrentClient(clientWithScenarios);
-
-      // Load default scenario for this client
-      if (clientWithScenarios.scenarios && clientWithScenarios.scenarios.length > 0) {
-        const defaultScenario = clientWithScenarios.scenarios.find(s => s.is_default) || clientWithScenarios.scenarios[0];
-        setCurrentScenario(defaultScenario);
-        lastSavedScenarioData.current = {
-          taxpayer_data: defaultScenario.taxpayer_data,
-          spouse_data: defaultScenario.spouse_data,
-          income_sources: defaultScenario.income_sources,
-          assets: defaultScenario.assets,
-          deductions: defaultScenario.deductions,
-          settings: defaultScenario.settings
-        };
+      const result = await clientAPI.getClient(clientId);
+      if (result.success) {
+        setCurrentClient(result.client);
+        
+        // Load default scenario for this client
+        if (result.client.scenarios && result.client.scenarios.length > 0) {
+          const defaultScenario = result.client.scenarios.find(s => s.isDefault) || result.client.scenarios[0];
+          setCurrentScenario(defaultScenario);
+          lastSavedData.current = {
+            taxpayerData: defaultScenario.taxpayerData,
+            spouseData: defaultScenario.spouseData,
+            incomeSources: defaultScenario.incomeSources,
+            assets: defaultScenario.assets,
+            deductions: defaultScenario.deductions,
+            settings: defaultScenario.settings
+          };
+        }
       } else {
-        setCurrentScenario(null);
-        lastSavedScenarioData.current = null;
+        setError(result.error);
       }
     } catch (error) {
-      setError('Failed to load client: ' + error.message);
+      setError('Failed to load client');
     } finally {
       setIsLoading(false);
     }
@@ -121,60 +101,34 @@ export const useClientData = () => {
   const createClient = async (clientData) => {
     setIsLoading(true);
     setError(null);
-
+    
     try {
-      // Ensure user_id is set for RLS
-      const { data, error: userError } = await supabase.auth.getUser();
-      const user = data?.user;
-      if (userError || !user) throw new Error('User not authenticated');
-
-      const { data: newClient, error: createError } = await supabase
-        .from('clients')
-        .insert({ ...clientData, user_id: user.id })
-        .select()
-        .single();
-
-      if (createError) throw createError;
-
-      // Create default scenario for new client
-      const { data: newScenario, error: scenarioError } = await supabase
-        .from('scenarios')
-        .insert({
-          client_id: newClient.id,
+      const result = await clientAPI.createClient(clientData);
+      if (result.success) {
+        setCurrentClient(result.client);
+        
+        // Create default scenario for new client
+        const scenarioResult = await scenarioAPI.createScenario({
+          clientId: result.client.id,
           name: 'Default Scenario',
-          description: 'Initial tax planning scenario',
-          is_default: true,
-          taxpayer_data: {},
-          spouse_data: {},
-          income_sources: [],
-          assets: [],
-          deductions: {},
-          settings: {},
-        })
-        .select()
-        .single();
-
-      if (scenarioError) throw scenarioError;
-
-      const clientWithScenarios = { ...newClient, scenarios: [newScenario] };
-      setCurrentClient(clientWithScenarios);
-      setCurrentScenario(newScenario);
-      lastSavedScenarioData.current = {
-        taxpayer_data: newScenario.taxpayer_data,
-        spouse_data: newScenario.spouse_data,
-        income_sources: newScenario.income_sources,
-        assets: newScenario.assets,
-        deductions: newScenario.deductions,
-        settings: newScenario.settings
-      };
-
-      // Refresh clients list
-      await loadClients();
-
-      return { success: true, client: clientWithScenarios };
+          description: 'Initial tax planning scenario'
+        });
+        
+        if (scenarioResult.success) {
+          setCurrentScenario(scenarioResult.scenario);
+        }
+        
+        // Refresh clients list
+        await loadClients();
+        
+        return { success: true, client: result.client };
+      } else {
+        setError(result.error);
+        return { success: false, error: result.error };
+      }
     } catch (error) {
-      setError('Failed to create client: ' + error.message);
-      return { success: false, error: error.message };
+      setError('Failed to create client');
+      return { success: false, error: 'Failed to create client' };
     } finally {
       setIsLoading(false);
     }
@@ -182,159 +136,24 @@ export const useClientData = () => {
 
   // Update client information
   const updateClient = async (clientId, updates) => {
-    setIsLoading(true);
-    setError(null);
     try {
-      const { data: updatedClient, error: updateError } = await supabase
-        .from('clients')
-        .update(updates)
-        .eq('id', clientId)
-        .select()
-        .single();
-
-      if (updateError) throw updateError;
-
-      setCurrentClient(prev => prev && prev.id === clientId ? { ...prev, ...updatedClient } : prev);
-
-      // Update in clients list
-      setClients(prev => prev.map(client =>
-        client.id === clientId ? updatedClient : client
-      ));
-
-      return { success: true };
-    } catch (error) {
-      setError('Failed to update client: ' + error.message);
-      return { success: false, error: error.message };
-    } finally {
-      setIsLoading(false);
-    }
-  };
-
-  // Delete client
-  const deleteClient = async (clientId) => {
-    setIsLoading(true);
-    setError(null);
-    try {
-      const { error: deleteError } = await supabase
-        .from('clients')
-        .delete()
-        .eq('id', clientId);
-
-      if (deleteError) throw deleteError;
-
-      // Clear current client if deleted
-      if (currentClient?.id === clientId) {
-        clearCurrentClient();
+      const result = await clientAPI.updateClient(clientId, updates);
+      if (result.success) {
+        setCurrentClient(result.client);
+        
+        // Update in clients list
+        setClients(prev => prev.map(client => 
+          client.id === clientId ? result.client : client
+        ));
+        
+        return { success: true };
+      } else {
+        setError(result.error);
+        return { success: false, error: result.error };
       }
-      await loadClients(); // Refresh client list
-      return { success: true };
     } catch (error) {
-      setError('Failed to delete client: ' + error.message);
-      return { success: false, error: error.message };
-    } finally {
-      setIsLoading(false);
-    }
-  };
-
-  // Select a scenario
-  const selectScenario = (scenarioId) => {
-    if (currentClient && currentClient.scenarios) {
-      const scenario = currentClient.scenarios.find(s => s.id === scenarioId);
-      if (scenario) {
-        setCurrentScenario(scenario);
-        lastSavedScenarioData.current = {
-          taxpayer_data: scenario.taxpayer_data,
-          spouse_data: scenario.spouse_data,
-          income_sources: scenario.income_sources,
-          assets: scenario.assets,
-          deductions: scenario.deductions,
-          settings: scenario.settings
-        };
-      }
-    }
-  };
-
-  // Create new scenario
-  const createScenario = async (scenarioData) => {
-    if (!currentClient) {
-      setError('No client selected to create a scenario for.');
-      return { success: false, error: 'No client selected' };
-    }
-    setIsLoading(true);
-    setError(null);
-    try {
-      const { data: newScenario, error: createError } = await supabase
-        .from('scenarios')
-        .insert({ ...scenarioData, client_id: currentClient.id })
-        .select()
-        .single();
-
-      if (createError) throw createError;
-
-      setCurrentClient(prev => ({ ...prev, scenarios: [...prev.scenarios, newScenario] }));
-      setCurrentScenario(newScenario);
-      return { success: true, scenario: newScenario };
-    } catch (error) {
-      setError('Failed to create scenario: ' + error.message);
-      return { success: false, error: error.message };
-    } finally {
-      setIsLoading(false);
-    }
-  };
-
-  // Update scenario
-  const updateScenario = async (scenarioId, updates) => {
-    setIsLoading(true);
-    setError(null);
-    try {
-      const { data: updatedScenario, error: updateError } = await supabase
-        .from('scenarios')
-        .update(updates)
-        .eq('id', scenarioId)
-        .select()
-        .single();
-
-      if (updateError) throw updateError;
-
-      setCurrentClient(prev => ({
-        ...prev,
-        scenarios: prev.scenarios.map(s => s.id === scenarioId ? updatedScenario : s)
-      }));
-      setCurrentScenario(updatedScenario);
-      return { success: true };
-    } catch (error) {
-      setError('Failed to update scenario: ' + error.message);
-      return { success: false, error: error.message };
-    } finally {
-      setIsLoading(false);
-    }
-  };
-
-  // Delete scenario
-  const deleteScenario = async (scenarioId) => {
-    setIsLoading(true);
-    setError(null);
-    try {
-      const { error: deleteError } = await supabase
-        .from('scenarios')
-        .delete()
-        .eq('id', scenarioId);
-
-      if (deleteError) throw deleteError;
-
-      setCurrentClient(prev => ({
-        ...prev,
-        scenarios: prev.scenarios.filter(s => s.id !== scenarioId)
-      }));
-      if (currentScenario?.id === scenarioId) {
-        setCurrentScenario(null); // Clear current scenario if deleted
-      }
-      return { success: true };
-    } catch (error) {
-      setError('Failed to delete scenario: ' + error.message);
-      return { success: false, error: error.message };
-    } finally {
-      setIsLoading(false);
+      setError('Failed to update client');
+      return { success: false, error: 'Failed to update client' };
     }
   };
 
@@ -343,7 +162,7 @@ export const useClientData = () => {
     if (!currentScenario) return;
 
     const newData = {
-      ...lastSavedScenarioData.current,
+      ...lastSavedData.current,
       ...updates
     };
 
@@ -354,8 +173,8 @@ export const useClientData = () => {
   // Update taxpayer data
   const updateTaxpayerData = useCallback((updates) => {
     updateScenarioData({
-      taxpayer_data: {
-        ...lastSavedScenarioData.current?.taxpayer_data,
+      taxpayerData: {
+        ...lastSavedData.current?.taxpayerData,
         ...updates
       }
     });
@@ -364,16 +183,16 @@ export const useClientData = () => {
   // Update spouse data
   const updateSpouseData = useCallback((updates) => {
     updateScenarioData({
-      spouse_data: {
-        ...lastSavedScenarioData.current?.spouse_data,
+      spouseData: {
+        ...lastSavedData.current?.spouseData,
         ...updates
       }
     });
   }, [updateScenarioData]);
 
   // Update income sources
-  const updateIncomeSources = useCallback((income_sources) => {
-    updateScenarioData({ income_sources });
+  const updateIncomeSources = useCallback((incomeSources) => {
+    updateScenarioData({ incomeSources });
   }, [updateScenarioData]);
 
   // Update assets
@@ -393,26 +212,19 @@ export const useClientData = () => {
 
   // Force save (manual save)
   const forceSave = async () => {
-    if (currentScenario && lastSavedScenarioData.current) {
+    if (currentScenario && lastSavedData.current) {
       try {
         setIsLoading(true);
-        const { error: saveError } = await supabase
-          .from('scenarios')
-          .update(lastSavedScenarioData.current)
-          .eq('id', currentScenario.id);
-
-        if (saveError) throw saveError;
-
+        await scenarioAPI.updateScenario(currentScenario.id, lastSavedData.current);
         setHasUnsavedChanges(false);
         return { success: true };
       } catch (error) {
-        setError('Failed to save changes: ' + error.message);
-        return { success: false, error: error.message };
+        setError('Failed to save changes');
+        return { success: false, error: 'Failed to save changes' };
       } finally {
         setIsLoading(false);
       }
     }
-    return { success: false, error: 'No current scenario or data to save.' };
   };
 
   // Clear current client/scenario
@@ -420,8 +232,8 @@ export const useClientData = () => {
     setCurrentClient(null);
     setCurrentScenario(null);
     setHasUnsavedChanges(false);
-    lastSavedScenarioData.current = null;
-
+    lastSavedData.current = null;
+    
     if (autoSaveTimer.current) {
       clearTimeout(autoSaveTimer.current);
     }
@@ -444,17 +256,12 @@ export const useClientData = () => {
     isLoading,
     error,
     hasUnsavedChanges,
-
+    
     // Actions
     loadClients,
-    selectClient,
+    loadClient,
     createClient,
     updateClient,
-    deleteClient,
-    selectScenario,
-    createScenario,
-    updateScenario,
-    deleteScenario,
     updateTaxpayerData,
     updateSpouseData,
     updateIncomeSources,
@@ -463,11 +270,10 @@ export const useClientData = () => {
     updateSettings,
     forceSave,
     clearCurrentClient,
-
+    
     // Utilities
-    setError: (msg) => setError(msg),
+    setError: (error) => setError(error),
     clearError: () => setError(null),
   };
 };
-
 

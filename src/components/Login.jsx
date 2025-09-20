@@ -1,8 +1,8 @@
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useAuth } from '../contexts/AuthContext';
 import { apiUtils } from '../services/api';
 
-const Login = () => {
+const Login = ({ onLogin }) => {
   const { login, isLoading, error, clearError, isAuthenticated } = useAuth();
   const [formData, setFormData] = useState({
     email: '',
@@ -21,7 +21,11 @@ const Login = () => {
   }, []);
 
   // Redirect if already authenticated
-
+  useEffect(() => {
+    if (isAuthenticated && onLogin) {
+      onLogin();
+    }
+  }, [isAuthenticated, onLogin]);
 
   // Clear error when component unmounts or form changes
   useEffect(() => {
@@ -49,12 +53,16 @@ const Login = () => {
 
     const result = await login(formData.email, formData.password);
     
-    // The parent component (TaxPlanningApp) now handles navigation based on isAuthenticated state
+    if (result.success && onLogin) {
+      onLogin();
+    }
   };
 
   const handleDemoLogin = async () => {
     const result = await login('admin@tax-on-a-me.com', 'TaxPlan2024!');
-    // The parent component (TaxPlanningApp) now handles navigation based on isAuthenticated state
+    if (result.success && onLogin) {
+      onLogin();
+    }
   };
 
   return (

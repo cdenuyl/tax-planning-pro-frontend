@@ -28,222 +28,387 @@ import {
   TabsTrigger,
 } from '@/components/ui/tabs.jsx';
 
-const ClientProfileModal = ({
-  client: initialClient, // Rename prop to avoid conflict with state
-  isOpen,
-  onSave,
-  onClose,
+const ClientProfileModal = ({ 
+  client, 
+  isOpen, 
+  onSave, 
+  onClose, 
   mode = 'create' // 'create', 'edit', 'view'
 }) => {
   const [activeTab, setActiveTab] = useState('basic');
   const [formData, setFormData] = useState({
-    taxpayer_first_name: '',
-    taxpayer_last_name: '',
-    taxpayer_email: '',
-    taxpayer_date_of_birth: '',
-    spouse_first_name: '',
-    spouse_last_name: '',
-    spouse_email: '',
-    spouse_date_of_birth: '',
-    status: 'prospect',
+    clientName: '',
+    primaryContact: '',
+    email: '',
+    phone: '',
+    birthdate: '',
+    address: {
+      street: '',
+      city: '',
+      state: '',
+      zipCode: ''
+    },
+    advisorName: '',
+    firmName: '',
+    clientType: 'individual',
+    riskProfile: 'moderate',
+    planningGoals: [],
     notes: '',
-    // Custom fields and tags are not directly in the Supabase clients table schema
-    // They would need separate tables or be stored as JSONB in a 'metadata' column if available
-    // For now, we'll omit them or handle them as simple text if needed.
+    tags: [],
+    customFields: {}
   });
-
+  
+  const [newTag, setNewTag] = useState('');
+  const [newCustomField, setNewCustomField] = useState({ key: '', value: '' });
   const [errors, setErrors] = useState({});
-
-  // Initialize form data when client changes or modal opens
+  
+  // Initialize form data when client changes
   useEffect(() => {
-    if (initialClient && mode !== 'create') {
+    if (client && mode !== 'create') {
       setFormData({
-        taxpayer_first_name: initialClient.taxpayer_first_name || '',
-        taxpayer_last_name: initialClient.taxpayer_last_name || '',
-        taxpayer_email: initialClient.taxpayer_email || '',
-        taxpayer_date_of_birth: initialClient.taxpayer_date_of_birth ? initialClient.taxpayer_date_of_birth.split('T')[0] : '',
-        spouse_first_name: initialClient.spouse_first_name || '',
-        spouse_last_name: initialClient.spouse_last_name || '',
-        spouse_email: initialClient.spouse_email || '',
-        spouse_date_of_birth: initialClient.spouse_date_of_birth ? initialClient.spouse_date_of_birth.split('T')[0] : '',
-        status: initialClient.status || 'prospect',
-        notes: initialClient.notes || '',
+        clientName: client.profile.clientName || '',
+        primaryContact: client.profile.primaryContact || '',
+        email: client.profile.email || '',
+        phone: client.profile.phone || '',
+        birthdate: client.profile.birthdate || '',
+        address: client.profile.address || {
+          street: '',
+          city: '',
+          state: '',
+          zipCode: ''
+        },
+        advisorName: client.profile.advisorName || '',
+        firmName: client.profile.firmName || '',
+        clientType: client.profile.clientType || 'individual',
+        riskProfile: client.profile.riskProfile || 'moderate',
+        planningGoals: client.profile.planningGoals || [],
+        notes: client.profile.notes || '',
+        tags: client.profile.tags || [],
+        customFields: client.profile.customFields || {}
       });
     } else if (mode === 'create') {
       // Reset form for new client
       setFormData({
-        taxpayer_first_name: '',
-        taxpayer_last_name: '',
-        taxpayer_email: '',
-        taxpayer_date_of_birth: '',
-        spouse_first_name: '',
-        spouse_last_name: '',
-        spouse_email: '',
-        spouse_date_of_birth: '',
-        status: 'prospect',
+        clientName: '',
+        primaryContact: '',
+        email: '',
+        phone: '',
+        birthdate: '',
+        address: {
+          street: '',
+          city: '',
+          state: '',
+          zipCode: ''
+        },
+        advisorName: '',
+        firmName: '',
+        clientType: 'individual',
+        riskProfile: 'moderate',
+        planningGoals: [],
         notes: '',
+        tags: [],
+        customFields: {}
       });
     }
     setErrors({});
     setActiveTab('basic');
-  }, [initialClient, mode, isOpen]);
-
+  }, [client, mode, isOpen]);
+  
   const handleInputChange = (field, value) => {
-    setFormData(prev => ({ ...prev, [field]: value }));
-
+    setFormData(prev => {
+      // Handle nested fields (e.g., address.street)
+      if (field.includes('.')) {
+        const [parent, child] = field.split('.');
+        return {
+          ...prev,
+          [parent]: {
+            ...prev[parent],
+            [child]: value
+          }
+        };
+      }
+      
+      // Handle regular fields
+      return { ...prev, [field]: value };
+    });
+    
     // Clear error when user starts typing
     if (errors[field]) {
       setErrors(prev => ({ ...prev, [field]: null }));
     }
   };
-
+  
+  const handleGoalToggle = (goal) => {
+    setFormData(prev => ({
+      ...prev,
+      planningGoals: prev.planningGoals.includes(goal)
+        ? prev.planningGoals.filter(g => g !== goal)
+        : [...prev.planningGoals, goal]
+    }));
+  };
+  
+  const handleAddTag = () => {
+    if (newTag.trim() && !formData.tags.includes(newTag.trim())) {
+      setFormData(prev => ({
+        ...prev,
+        tags: [...prev.tags, newTag.trim()]
+      }));
+      setNewTag('');
+    }
+  };
+  
+  const handleRemoveTag = (tagToRemove) => {
+    setFormData(prev => ({
+      ...prev,
+      tags: prev.tags.filter(tag => tag !== tagToRemove)
+    }));
+  };
+  
+  const handleAddCustomField = () => {
+    if (newCustomField.key.trim() && newCustomField.value.trim()) {
+      setFormData(prev => ({
+        ...prev,
+        customFields: {
+          ...prev.customFields,
+          [newCustomField.key.trim()]: newCustomField.value.trim()
+        }
+      }));
+      setNewCustomField({ key: '', value: '' });
+    }
+  };
+  
+  const handleRemoveCustomField = (key) => {
+    setFormData(prev => {
+      const newCustomFields = { ...prev.customFields };
+      delete newCustomFields[key];
+      return {
+        ...prev,
+        customFields: newCustomFields
+      };
+    });
+  };
+  
   const validateForm = () => {
     const newErrors = {};
-
-    if (!formData.taxpayer_first_name.trim()) {
-      newErrors.taxpayer_first_name = 'Taxpayer first name is required';
+    
+    if (!formData.clientName.trim()) {
+      newErrors.clientName = 'Client name is required';
     }
-    if (!formData.taxpayer_last_name.trim()) {
-      newErrors.taxpayer_last_name = 'Taxpayer last name is required';
+    
+    if (!formData.primaryContact.trim()) {
+      newErrors.primaryContact = 'Primary contact is required';
     }
-
-    if (formData.taxpayer_email && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(formData.taxpayer_email)) {
-      newErrors.taxpayer_email = 'Please enter a valid email address';
+    
+    if (formData.email && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(formData.email)) {
+      newErrors.email = 'Please enter a valid email address';
     }
-
-    if (formData.spouse_email && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(formData.spouse_email)) {
-      newErrors.spouse_email = 'Please enter a valid email address for spouse';
-    }
-
+    
     setErrors(newErrors);
     return Object.keys(newErrors).length === 0;
   };
-
+  
   const handleSave = () => {
     if (!validateForm()) return;
-
-    const dataToSave = {
+    
+    const profileData = {
       ...formData,
-      // Ensure date fields are null if empty string, as Supabase expects null for empty dates
-      taxpayer_date_of_birth: formData.taxpayer_date_of_birth || null,
-      spouse_date_of_birth: formData.spouse_date_of_birth || null,
+      lastModified: new Date().toISOString()
     };
-
-    onSave(dataToSave);
+    
+    if (mode === 'create') {
+      profileData.createdDate = new Date().toISOString();
+      profileData.isActive = true;
+      profileData.isArchived = false;
+    }
+    
+    onSave(profileData);
   };
-
-  const clientStatuses = [
-    { value: 'prospect', label: 'Prospect' },
-    { value: 'active', label: 'Active' },
-    { value: 'inactive', label: 'Inactive' },
+  
+  const clientTypes = [
+    { value: 'individual', label: 'Individual' },
+    { value: 'couple', label: 'Married Couple' },
+    { value: 'retiree', label: 'Retiree' },
+    { value: 'business', label: 'Business Owner' },
+    { value: 'trust', label: 'Trust/Estate' }
   ];
-
+  
+  const riskProfiles = [
+    { value: 'conservative', label: 'Conservative' },
+    { value: 'moderate-conservative', label: 'Moderate Conservative' },
+    { value: 'moderate', label: 'Moderate' },
+    { value: 'moderate-aggressive', label: 'Moderate Aggressive' },
+    { value: 'aggressive', label: 'Aggressive' }
+  ];
+  
+  const availableGoals = [
+    { value: 'retirement-planning', label: 'Retirement Planning' },
+    { value: 'tax-optimization', label: 'Tax Optimization' },
+    { value: 'estate-planning', label: 'Estate Planning' },
+    { value: 'education-funding', label: 'Education Funding' },
+    { value: 'debt-reduction', label: 'Debt Reduction' },
+    { value: 'wealth-accumulation', label: 'Wealth Accumulation' },
+    { value: 'insurance-planning', label: 'Insurance Planning' },
+    { value: 'business-planning', label: 'Business Planning' },
+    { value: 'charitable-giving', label: 'Charitable Giving' },
+    { value: 'income-generation', label: 'Income Generation' }
+  ];
+  
+  const states = [
+    'Alabama', 'Alaska', 'Arizona', 'Arkansas', 'California', 'Colorado', 'Connecticut', 
+    'Delaware', 'Florida', 'Georgia', 'Hawaii', 'Idaho', 'Illinois', 'Indiana', 'Iowa', 
+    'Kansas', 'Kentucky', 'Louisiana', 'Maine', 'Maryland', 'Massachusetts', 'Michigan', 
+    'Minnesota', 'Mississippi', 'Missouri', 'Montana', 'Nebraska', 'Nevada', 'New Hampshire', 
+    'New Jersey', 'New Mexico', 'New York', 'North Carolina', 'North Dakota', 'Ohio', 
+    'Oklahoma', 'Oregon', 'Pennsylvania', 'Rhode Island', 'South Carolina', 'South Dakota', 
+    'Tennessee', 'Texas', 'Utah', 'Vermont', 'Virginia', 'Washington', 'West Virginia', 
+    'Wisconsin', 'Wyoming'
+  ];
+  
   if (!isOpen) return null;
-
+  
   return (
     <Dialog open={isOpen} onOpenChange={onClose}>
       <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
         <DialogHeader>
           <DialogTitle>
-            {mode === 'create' ? 'New Client Profile' :
-             mode === 'edit' ? 'Edit Client Profile' :
+            {mode === 'create' ? 'New Client Profile' : 
+             mode === 'edit' ? 'Edit Client Profile' : 
              'Client Profile'}
           </DialogTitle>
           <DialogDescription>
-            {mode === 'create' ? 'Create a new client profile' :
-             mode === 'edit' ? 'Update client information' :
+            {mode === 'create' ? 'Create a new client profile' : 
+             mode === 'edit' ? 'Update client information' : 
              'View client information'}
           </DialogDescription>
         </DialogHeader>
-
+        
         <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
-          <TabsList className="grid grid-cols-2 mb-6">
+          <TabsList className="grid grid-cols-4 mb-6">
             <TabsTrigger value="basic">Basic Info</TabsTrigger>
-            <TabsTrigger value="spouse">Spouse Info</TabsTrigger>
-            {/* Removed Contact, Planning, Custom Fields tabs as they don't directly map to current schema */}
+            <TabsTrigger value="contact">Contact</TabsTrigger>
+            <TabsTrigger value="planning">Planning</TabsTrigger>
+            <TabsTrigger value="custom">Custom Fields</TabsTrigger>
           </TabsList>
-
+          
           {/* Basic Information Tab */}
           <TabsContent value="basic" className="space-y-4">
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               <div className="space-y-2">
-                <Label htmlFor="taxpayer_first_name">Taxpayer First Name *</Label>
+                <Label htmlFor="clientName">Client Name *</Label>
                 <Input
-                  id="taxpayer_first_name"
-                  value={formData.taxpayer_first_name}
-                  onChange={(e) => handleInputChange('taxpayer_first_name', e.target.value)}
-                  placeholder="John"
+                  id="clientName"
+                  value={formData.clientName}
+                  onChange={(e) => handleInputChange('clientName', e.target.value)}
+                  placeholder="John & Jane Doe"
                   disabled={mode === 'view'}
-                  className={errors.taxpayer_first_name ? 'border-red-500' : ''}
+                  className={errors.clientName ? 'border-red-500' : ''}
                 />
-                {errors.taxpayer_first_name && (
-                  <p className="text-red-500 text-sm">{errors.taxpayer_first_name}</p>
+                {errors.clientName && (
+                  <p className="text-red-500 text-sm">{errors.clientName}</p>
                 )}
               </div>
-
+              
               <div className="space-y-2">
-                <Label htmlFor="taxpayer_last_name">Taxpayer Last Name *</Label>
+                <Label htmlFor="primaryContact">Primary Contact *</Label>
                 <Input
-                  id="taxpayer_last_name"
-                  value={formData.taxpayer_last_name}
-                  onChange={(e) => handleInputChange('taxpayer_last_name', e.target.value)}
-                  placeholder="Doe"
+                  id="primaryContact"
+                  value={formData.primaryContact}
+                  onChange={(e) => handleInputChange('primaryContact', e.target.value)}
+                  placeholder="John Doe"
                   disabled={mode === 'view'}
-                  className={errors.taxpayer_last_name ? 'border-red-500' : ''}
+                  className={errors.primaryContact ? 'border-red-500' : ''}
                 />
-                {errors.taxpayer_last_name && (
-                  <p className="text-red-500 text-sm">{errors.taxpayer_last_name}</p>
+                {errors.primaryContact && (
+                  <p className="text-red-500 text-sm">{errors.primaryContact}</p>
                 )}
               </div>
-
+              
               <div className="space-y-2">
-                <Label htmlFor="taxpayer_email">Taxpayer Email</Label>
+                <Label htmlFor="birthdate">Date of Birth</Label>
                 <Input
-                  id="taxpayer_email"
-                  type="email"
-                  value={formData.taxpayer_email}
-                  onChange={(e) => handleInputChange('taxpayer_email', e.target.value)}
-                  placeholder="john.doe@example.com"
-                  disabled={mode === 'view'}
-                  className={errors.taxpayer_email ? 'border-red-500' : ''}
-                />
-                {errors.taxpayer_email && (
-                  <p className="text-red-500 text-sm">{errors.taxpayer_email}</p>
-                )}
-              </div>
-
-              <div className="space-y-2">
-                <Label htmlFor="taxpayer_date_of_birth">Taxpayer Date of Birth</Label>
-                <Input
-                  id="taxpayer_date_of_birth"
+                  id="birthdate"
                   type="date"
-                  value={formData.taxpayer_date_of_birth}
-                  onChange={(e) => handleInputChange('taxpayer_date_of_birth', e.target.value)}
+                  value={formData.birthdate}
+                  onChange={(e) => handleInputChange('birthdate', e.target.value)}
                   disabled={mode === 'view'}
+                  className={errors.birthdate ? 'border-red-500' : ''}
                 />
+                {errors.birthdate && (
+                  <p className="text-red-500 text-sm">{errors.birthdate}</p>
+                )}
               </div>
-
+              
               <div className="space-y-2">
-                <Label htmlFor="status">Status</Label>
+                <Label htmlFor="clientType">Client Type</Label>
                 <Select
-                  value={formData.status}
-                  onValueChange={(value) => handleInputChange('status', value)}
+                  value={formData.clientType}
+                  onValueChange={(value) => handleInputChange('clientType', value)}
                   disabled={mode === 'view'}
                 >
-                  <SelectTrigger id="status">
-                    <SelectValue placeholder="Select status" />
+                  <SelectTrigger id="clientType">
+                    <SelectValue placeholder="Select client type" />
                   </SelectTrigger>
                   <SelectContent>
-                    {clientStatuses.map(status => (
-                      <SelectItem key={status.value} value={status.value}>
-                        {status.label}
+                    {clientTypes.map(type => (
+                      <SelectItem key={type.value} value={type.value}>
+                        {type.label}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+              
+              <div className="space-y-2">
+                <Label htmlFor="riskProfile">Risk Profile</Label>
+                <Select
+                  value={formData.riskProfile}
+                  onValueChange={(value) => handleInputChange('riskProfile', value)}
+                  disabled={mode === 'view'}
+                >
+                  <SelectTrigger id="riskProfile">
+                    <SelectValue placeholder="Select risk profile" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {riskProfiles.map(profile => (
+                      <SelectItem key={profile.value} value={profile.value}>
+                        {profile.label}
                       </SelectItem>
                     ))}
                   </SelectContent>
                 </Select>
               </div>
             </div>
-
+            
+            <div className="space-y-2">
+              <Label>Tags</Label>
+              <div className="flex flex-wrap gap-2 mb-2">
+                {formData.tags.map(tag => (
+                  <Badge key={tag} variant="secondary" className="flex items-center gap-1">
+                    {tag}
+                    {mode !== 'view' && (
+                      <X 
+                        size={14} 
+                        className="cursor-pointer" 
+                        onClick={() => handleRemoveTag(tag)}
+                      />
+                    )}
+                  </Badge>
+                ))}
+              </div>
+              {mode !== 'view' && (
+                <div className="flex gap-2">
+                  <Input
+                    value={newTag}
+                    onChange={(e) => setNewTag(e.target.value)}
+                    onKeyDown={(e) => e.key === 'Enter' && (e.preventDefault(), handleAddTag())}
+                    placeholder="Add tag..."
+                    className="flex-grow"
+                  />
+                  <Button onClick={handleAddTag} size="sm">Add</Button>
+                </div>
+              )}
+            </div>
+            
             <div className="space-y-2">
               <Label htmlFor="notes">Notes</Label>
               <Textarea
@@ -256,73 +421,220 @@ const ClientProfileModal = ({
               />
             </div>
           </TabsContent>
-
-          {/* Spouse Information Tab */}
-          <TabsContent value="spouse" className="space-y-4">
+          
+          {/* Contact Information Tab */}
+          <TabsContent value="contact" className="space-y-4">
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               <div className="space-y-2">
-                <Label htmlFor="spouse_first_name">Spouse First Name</Label>
+                <Label htmlFor="email">Email</Label>
                 <Input
-                  id="spouse_first_name"
-                  value={formData.spouse_first_name}
-                  onChange={(e) => handleInputChange('spouse_first_name', e.target.value)}
-                  placeholder="Jane"
-                  disabled={mode === 'view'}
-                />
-              </div>
-
-              <div className="space-y-2">
-                <Label htmlFor="spouse_last_name">Spouse Last Name</Label>
-                <Input
-                  id="spouse_last_name"
-                  value={formData.spouse_last_name}
-                  onChange={(e) => handleInputChange('spouse_last_name', e.target.value)}
-                  placeholder="Doe"
-                  disabled={mode === 'view'}
-                />
-              </div>
-
-              <div className="space-y-2">
-                <Label htmlFor="spouse_email">Spouse Email</Label>
-                <Input
-                  id="spouse_email"
+                  id="email"
                   type="email"
-                  value={formData.spouse_email}
-                  onChange={(e) => handleInputChange('spouse_email', e.target.value)}
-                  placeholder="jane.doe@example.com"
+                  value={formData.email}
+                  onChange={(e) => handleInputChange('email', e.target.value)}
+                  placeholder="john.doe@example.com"
                   disabled={mode === 'view'}
-                  className={errors.spouse_email ? 'border-red-500' : ''}
+                  className={errors.email ? 'border-red-500' : ''}
                 />
-                {errors.spouse_email && (
-                  <p className="text-red-500 text-sm">{errors.spouse_email}</p>
+                {errors.email && (
+                  <p className="text-red-500 text-sm">{errors.email}</p>
                 )}
               </div>
-
+              
               <div className="space-y-2">
-                <Label htmlFor="spouse_date_of_birth">Spouse Date of Birth</Label>
+                <Label htmlFor="phone">Phone</Label>
                 <Input
-                  id="spouse_date_of_birth"
-                  type="date"
-                  value={formData.spouse_date_of_birth}
-                  onChange={(e) => handleInputChange('spouse_date_of_birth', e.target.value)}
+                  id="phone"
+                  value={formData.phone}
+                  onChange={(e) => handleInputChange('phone', e.target.value)}
+                  placeholder="(555) 123-4567"
+                  disabled={mode === 'view'}
+                />
+              </div>
+            </div>
+            
+            <div className="space-y-2">
+              <Label htmlFor="street">Street Address</Label>
+              <Input
+                id="street"
+                value={formData.address.street}
+                onChange={(e) => handleInputChange('address.street', e.target.value)}
+                placeholder="123 Main St"
+                disabled={mode === 'view'}
+              />
+            </div>
+            
+            <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
+              <div className="space-y-2">
+                <Label htmlFor="city">City</Label>
+                <Input
+                  id="city"
+                  value={formData.address.city}
+                  onChange={(e) => handleInputChange('address.city', e.target.value)}
+                  placeholder="Anytown"
+                  disabled={mode === 'view'}
+                />
+              </div>
+              
+              <div className="space-y-2">
+                <Label htmlFor="state">State</Label>
+                <Select
+                  value={formData.address.state}
+                  onValueChange={(value) => handleInputChange('address.state', value)}
+                  disabled={mode === 'view'}
+                >
+                  <SelectTrigger id="state">
+                    <SelectValue placeholder="Select state" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {states.map(state => (
+                      <SelectItem key={state} value={state}>
+                        {state}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+              
+              <div className="space-y-2">
+                <Label htmlFor="zipCode">ZIP Code</Label>
+                <Input
+                  id="zipCode"
+                  value={formData.address.zipCode}
+                  onChange={(e) => handleInputChange('address.zipCode', e.target.value)}
+                  placeholder="12345"
+                  disabled={mode === 'view'}
+                />
+              </div>
+            </div>
+            
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <div className="space-y-2">
+                <Label htmlFor="advisorName">Advisor Name</Label>
+                <Input
+                  id="advisorName"
+                  value={formData.advisorName}
+                  onChange={(e) => handleInputChange('advisorName', e.target.value)}
+                  placeholder="Your Name"
+                  disabled={mode === 'view'}
+                />
+              </div>
+              
+              <div className="space-y-2">
+                <Label htmlFor="firmName">Firm Name</Label>
+                <Input
+                  id="firmName"
+                  value={formData.firmName}
+                  onChange={(e) => handleInputChange('firmName', e.target.value)}
+                  placeholder="Advisory Firm LLC"
                   disabled={mode === 'view'}
                 />
               </div>
             </div>
           </TabsContent>
+          
+          {/* Planning Information Tab */}
+          <TabsContent value="planning" className="space-y-4">
+            <div className="space-y-2">
+              <Label>Planning Goals</Label>
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-2">
+                {availableGoals.map(goal => (
+                  <div key={goal.value} className="flex items-center space-x-2">
+                    <Checkbox
+                      id={`goal-${goal.value}`}
+                      checked={formData.planningGoals.includes(goal.value)}
+                      onCheckedChange={(checked) => {
+                        if (checked) {
+                          handleGoalToggle(goal.value);
+                        } else {
+                          handleGoalToggle(goal.value);
+                        }
+                      }}
+                      disabled={mode === 'view'}
+                    />
+                    <Label
+                      htmlFor={`goal-${goal.value}`}
+                      className="text-sm font-normal"
+                    >
+                      {goal.label}
+                    </Label>
+                  </div>
+                ))}
+              </div>
+            </div>
+          </TabsContent>
+          
+          {/* Custom Fields Tab */}
+          <TabsContent value="custom" className="space-y-4">
+            <div className="space-y-2">
+              <Label>Custom Fields</Label>
+              {Object.entries(formData.customFields).length > 0 ? (
+                <div className="space-y-2">
+                  {Object.entries(formData.customFields).map(([key, value]) => (
+                    <div key={key} className="flex items-center gap-2">
+                      <div className="flex-grow grid grid-cols-2 gap-2 border p-2 rounded-md">
+                        <div className="font-medium">{key}:</div>
+                        <div>{value}</div>
+                      </div>
+                      {mode !== 'view' && (
+                        <Button
+                          variant="ghost"
+                          size="icon"
+                          onClick={() => handleRemoveCustomField(key)}
+                        >
+                          <X size={18} />
+                        </Button>
+                      )}
+                    </div>
+                  ))}
+                </div>
+              ) : (
+                <p className="text-sm text-gray-500">No custom fields added yet.</p>
+              )}
+              
+              {mode !== 'view' && (
+                <div className="grid grid-cols-1 md:grid-cols-3 gap-2 mt-4">
+                  <Input
+                    value={newCustomField.key}
+                    onChange={(e) => setNewCustomField({ ...newCustomField, key: e.target.value })}
+                    placeholder="Field name"
+                    className="md:col-span-1"
+                  />
+                  <Input
+                    value={newCustomField.value}
+                    onChange={(e) => setNewCustomField({ ...newCustomField, value: e.target.value })}
+                    placeholder="Field value"
+                    className="md:col-span-1"
+                  />
+                  <Button 
+                    onClick={handleAddCustomField}
+                    disabled={!newCustomField.key.trim() || !newCustomField.value.trim()}
+                    className="md:col-span-1"
+                  >
+                    <Plus size={16} className="mr-2" />
+                    Add Field
+                  </Button>
+                </div>
+              )}
+            </div>
+          </TabsContent>
         </Tabs>
-
-        {mode !== 'view' && (
-          <DialogFooter>
-            <Button variant="outline" onClick={onClose}>Cancel</Button>
-            <Button onClick={handleSave}>Save Client</Button>
-          </DialogFooter>
-        )}
+        
+        <DialogFooter>
+          <Button variant="outline" onClick={onClose}>
+            {mode === 'view' ? 'Close' : 'Cancel'}
+          </Button>
+          
+          {mode !== 'view' && (
+            <Button onClick={handleSave}>
+              {mode === 'create' ? 'Create Client' : 'Save Changes'}
+            </Button>
+          )}
+        </DialogFooter>
       </DialogContent>
     </Dialog>
   );
 };
 
 export default ClientProfileModal;
-
 

@@ -9,15 +9,15 @@ import {
 } from '@/components/ui/card.jsx';
 import { Button } from '@/components/ui/button.jsx';
 import { Badge } from '@/components/ui/badge.jsx';
-import {
-  Edit,
-  Archive,
-  Eye,
-  MoreHorizontal,
-  User,
-  Mail,
-  Phone,
-  Calendar,
+import { 
+  Edit, 
+  Archive, 
+  Eye, 
+  MoreHorizontal, 
+  User, 
+  Mail, 
+  Phone, 
+  Calendar, 
   Tag
 } from 'lucide-react';
 import {
@@ -32,7 +32,7 @@ import {
 // Helper function to format date
 const formatDate = (dateString) => {
   if (!dateString) return 'N/A';
-
+  
   try {
     const date = new Date(dateString);
     return new Intl.DateTimeFormat('en-US', {
@@ -45,49 +45,51 @@ const formatDate = (dateString) => {
   }
 };
 
-// Helper function to get client status display name
-const getClientStatusDisplay = (status) => {
-  const statusMap = {
-    'prospect': 'Prospect',
-    'active': 'Active',
-    'inactive': 'Inactive'
+// Helper function to get client type display name
+const getClientTypeDisplay = (clientType) => {
+  const typeMap = {
+    'individual': 'Individual',
+    'couple': 'Couple',
+    'retiree': 'Retiree',
+    'business': 'Business'
   };
-
-  return statusMap[status] || status;
+  
+  return typeMap[clientType] || clientType;
 };
 
-const ClientCard = ({ client, onSelect, onEdit, onArchive, isActive }) => {
-  if (!client) {
+// Helper function to get scenario count text
+const getScenarioCountText = (scenarios) => {
+  if (!scenarios || scenarios.length === 0) {
+    return 'No scenarios';
+  }
+  
+  if (scenarios.length === 1) {
+    return '1 scenario';
+  }
+  
+  return `${scenarios.length} scenarios`;
+};
+
+const ClientCard = ({ client, onSelect, onEdit, onArchive }) => {
+  if (!client || !client.profile) {
     return null;
   }
-
-  // Destructure client properties directly from the Supabase schema
-  const {
-    id,
-    taxpayer_first_name,
-    taxpayer_last_name,
-    taxpayer_email,
-    status,
-    created_at,
-    updated_at,
-    // Add other fields as they become available in the client object
-  } = client;
-
-  const clientFullName = `${taxpayer_first_name || ''} ${taxpayer_last_name || ''}`.trim();
-  const primaryContact = taxpayer_email || 'N/A';
-
+  
+  const { profile, scenarios = [] } = client;
+  const activeScenario = scenarios.find(s => s.isActive);
+  
   return (
-    <Card className={`client-card ${status === 'inactive' ? 'opacity-60' : ''} ${isActive ? 'border-blue-500 ring-2 ring-blue-500' : ''}`}>
+    <Card className={`client-card ${profile.isArchived ? 'opacity-60' : ''}`}>
       <CardHeader className="pb-2">
         <div className="flex justify-between items-start">
           <div>
-            <CardTitle className="text-lg">{clientFullName}</CardTitle>
+            <CardTitle className="text-lg">{profile.clientName}</CardTitle>
             <CardDescription className="flex items-center gap-1">
               <User size={14} />
-              {primaryContact}
+              {profile.primaryContact || 'No primary contact'}
             </CardDescription>
           </div>
-
+          
           <DropdownMenu>
             <DropdownMenuTrigger asChild>
               <Button variant="ghost" size="icon">
@@ -97,80 +99,89 @@ const ClientCard = ({ client, onSelect, onEdit, onArchive, isActive }) => {
             <DropdownMenuContent align="end">
               <DropdownMenuLabel>Actions</DropdownMenuLabel>
               <DropdownMenuSeparator />
-              <DropdownMenuItem onClick={() => onSelect(id)}>
+              <DropdownMenuItem onClick={() => onSelect(client.id)}>
                 <Eye className="mr-2" size={16} />
                 Activate Client
               </DropdownMenuItem>
-              <DropdownMenuItem onClick={() => onEdit(id)}>
+              <DropdownMenuItem onClick={() => onEdit(client.id)}>
                 <Edit className="mr-2" size={16} />
                 Edit Client
               </DropdownMenuItem>
-              <DropdownMenuItem onClick={() => onArchive(id)}>
+              <DropdownMenuItem onClick={() => onArchive(client.id)}>
                 <Archive className="mr-2" size={16} />
-                {status === 'inactive' ? 'Unarchive Client' : 'Archive Client'}
+                {profile.isArchived ? 'Unarchive Client' : 'Archive Client'}
               </DropdownMenuItem>
             </DropdownMenuContent>
           </DropdownMenu>
         </div>
-
+        
         <div className="flex flex-wrap gap-1 mt-2">
           <Badge variant="outline" className="text-xs">
-            {getClientStatusDisplay(status)}
+            {getClientTypeDisplay(profile.clientType)}
           </Badge>
-
-          {status === 'inactive' && (
+          
+          {profile.isArchived && (
             <Badge variant="secondary" className="text-xs">
               Archived
             </Badge>
           )}
-
-          {/* Tags would need to be handled if they were in a join table or a text field */}
+          
+          {profile.tags && profile.tags.slice(0, 2).map(tag => (
+            <Badge key={tag} variant="secondary" className="text-xs">
+              {tag}
+            </Badge>
+          ))}
+          
+          {profile.tags && profile.tags.length > 2 && (
+            <Badge variant="secondary" className="text-xs">
+              +{profile.tags.length - 2} more
+            </Badge>
+          )}
         </div>
       </CardHeader>
-
+      
       <CardContent className="pb-2">
         <div className="grid grid-cols-1 gap-2 text-sm">
-          {taxpayer_email && (
+          {profile.email && (
             <div className="flex items-center gap-2">
               <Mail size={14} className="text-gray-500" />
-              <span className="truncate">{taxpayer_email}</span>
+              <span className="truncate">{profile.email}</span>
             </div>
           )}
-
-          {/* Phone number is not in the provided schema */}
-          {/* <div className="flex items-center gap-2">
-            <Phone size={14} className="text-gray-500" />
-            <span>{profile.phone}</span>
-          </div> */}
-
+          
+          {profile.phone && (
+            <div className="flex items-center gap-2">
+              <Phone size={14} className="text-gray-500" />
+              <span>{profile.phone}</span>
+            </div>
+          )}
+          
           <div className="flex items-center gap-2">
             <Calendar size={14} className="text-gray-500" />
-            <span>Modified: {formatDate(updated_at)}</span>
+            <span>Modified: {formatDate(profile.lastModified)}</span>
           </div>
-
-          {/* Scenario count is not directly in the clients table */}
-          {/* <div className="flex items-center gap-2">
+          
+          <div className="flex items-center gap-2">
             <Tag size={14} className="text-gray-500" />
             <span>{getScenarioCountText(scenarios)}</span>
-          </div> */}
+          </div>
         </div>
-
-        {/* Active scenario is not directly in the clients table */}
-        {/* {activeScenario && (
+        
+        {activeScenario && (
           <div className="mt-3 pt-3 border-t border-gray-100">
             <div className="text-xs text-gray-500 mb-1">Active Scenario:</div>
             <div className="text-sm font-medium">{activeScenario.name}</div>
           </div>
-        )} */}
+        )}
       </CardContent>
-
+      
       <CardFooter className="pt-2">
         <div className="flex justify-between w-full">
-          <Button variant="outline" size="sm" onClick={() => onEdit(id)}>
+          <Button variant="outline" size="sm" onClick={() => onEdit(client.id)}>
             <Edit size={14} className="mr-1" />
             Edit
           </Button>
-          <Button size="sm" onClick={() => onSelect(id)}>
+          <Button size="sm" onClick={() => onSelect(client.id)}>
             <Eye size={14} className="mr-1" />
             Activate
           </Button>
@@ -178,8 +189,7 @@ const ClientCard = ({ client, onSelect, onEdit, onArchive, isActive }) => {
       </CardFooter>
     </Card>
   );
-}; 
+};
 
 export default ClientCard;
-
 
