@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { jsPDF } from 'jspdf';
+const { jsPDF } = window.jspdf;
 import PrintableReportGenerator from './reports/PrintableReportGenerator';
 import { ExecutiveSummaryModule } from './reports/ExecutiveSummaryModule';
 import { CurrentTaxPositionModule } from './reports/CurrentTaxPositionModule';

@@ -6,9 +6,6 @@ import path from 'path'
 export default defineConfig({
   plugins: [react()],
   build: {
-    rollupOptions: {
-      external: ["jspdf"],
-    },
   },
   resolve: {
     alias: {
