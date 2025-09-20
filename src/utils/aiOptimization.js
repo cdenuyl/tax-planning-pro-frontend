@@ -80,6 +80,9 @@ function analyzeTaxBracketOptimization(incomeSources, taxpayer, spouse, deductio
 
 // Social Security Optimization Analysis
 function analyzeSocialSecurityOptimization(incomeSources, taxpayer, spouse, deductions, appSettings, currentCalc) {
+  if (!Array.isArray(incomeSources)) {
+    incomeSources = [];
+  }
   const ssThresholds = getSocialSecurityThresholds(taxpayer.filingStatus);
   const provisionalIncome = currentCalc.socialSecurity.provisionalIncome;
   const ssAmount = incomeSources
