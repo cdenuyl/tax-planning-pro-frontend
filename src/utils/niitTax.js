@@ -38,13 +38,18 @@ export function calculateNIIT(modifiedAGI, netInvestmentIncome, filingStatus) {
   try {
     // Input validation
     if (typeof modifiedAGI !== 'number' || isNaN(modifiedAGI)) {
-      console.warn('Invalid modifiedAGI provided to calculateNIIT:', modifiedAGI);
+      console.warn('Invalid modifiedAGI provided to calculateNIIT, converting to 0:', modifiedAGI);
       modifiedAGI = 0;
     }
     
     if (typeof netInvestmentIncome !== 'number' || isNaN(netInvestmentIncome)) {
-      console.warn('Invalid netInvestmentIncome provided to calculateNIIT:', netInvestmentIncome);
+      console.warn('Invalid netInvestmentIncome provided to calculateNIIT, converting to 0:', netInvestmentIncome);
       netInvestmentIncome = 0;
+    }
+
+    if (typeof filingStatus !== 'string') {
+      console.warn('Invalid filingStatus provided to calculateNIIT, defaulting to single:', filingStatus);
+      filingStatus = 'single';
     }
     
     // Use the consolidated tax engine
