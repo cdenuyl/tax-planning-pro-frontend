@@ -100,6 +100,10 @@ export function findNextTaxBracket(federalTaxableIncome, filingStatus) {
  * and identify the specific cause of the rate increase
  */
 export function findNextRateHike(incomeSources, taxpayerAge, spouseAge, filingStatus, appSettings) {
+  // Ensure incomeSources is an array
+  if (!Array.isArray(incomeSources)) {
+    incomeSources = [];
+  }
   const baseRate = calculateTrueEffectiveMarginalRate(incomeSources, taxpayerAge, spouseAge, filingStatus, appSettings);
   const baseCalc = calculateComprehensiveTaxes(incomeSources, taxpayerAge, spouseAge, filingStatus, null, appSettings);
   
@@ -320,6 +324,10 @@ function narrowDownRateHike(incomeSources, taxpayerAge, spouseAge, filingStatus,
  * Get comprehensive analysis with both bracket and rate hike calculations
  */
 export function getComprehensiveMarginalAnalysis(incomeSources, taxpayerAge, spouseAge, filingStatus, appSettings) {
+  // Ensure incomeSources is an array
+  if (!Array.isArray(incomeSources)) {
+    incomeSources = [];
+  }
   const baseCalc = calculateComprehensiveTaxes(incomeSources, taxpayerAge, spouseAge, filingStatus, null, appSettings);
   
   // Get pure tax bracket info
