@@ -677,7 +677,7 @@ function App() {
 
   // Memoized Michigan Homestead Credit calculation
   const michiganHomesteadCredit = useMemo(() => {
-    return calculateMichiganHomesteadCredit(taxpayer, spouse, taxData.summary.totalIncome, appSettings);
+    return calculateMichiganHomesteadCredit(taxpayer, spouse, taxData?.summary?.totalIncome || 0, appSettings);
   }, [taxpayer, spouse, taxData.summary.totalIncome, appSettings]);
 
   // Memoized Michigan Property Tax Exemptions
