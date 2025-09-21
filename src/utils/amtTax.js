@@ -36,7 +36,7 @@ export function calculateAMT(incomeSources, deductions, filingStatus) {
   };
 
   // Calculate regular AGI
-  const totalIncome = incomeSources
+  const totalIncome = (Array.isArray(incomeSources) ? incomeSources : [])
     .filter(source => source.enabled)
     .reduce((sum, source) => sum + getYearlyAmount(source), 0);
 
