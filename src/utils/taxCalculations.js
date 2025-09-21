@@ -686,7 +686,9 @@ export function calculateComprehensiveTaxes(incomeSources = [], taxpayerAge = 65
   
   // Calculate NIIT (Net Investment Income Tax)
   const netInvestmentIncome = calculateNetInvestmentIncome(adjustedIncomeSources);
-  const niitCalculation = getNIITAnalysis(federalAGI, netInvestmentIncome, filingStatus);
+  const niitCalculation = calculateNIIT(federalAGI, netInvestmentIncome, filingStatus);
+  const niitAnalysis = getNIITAnalysis(federalAGI, netInvestmentIncome, filingStatus);
+  
   // TODO: Comprehensive marginal rate analysis will be calculated separately in UI to avoid circular dependency
   const marginalRateAnalysis = {
     currentMarginalRate: federalMarginalRate,
