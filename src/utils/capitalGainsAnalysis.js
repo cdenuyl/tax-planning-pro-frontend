@@ -3,6 +3,10 @@ import { LONG_TERM_CAPITAL_GAINS_BRACKETS_2025, NIIT_THRESHOLDS_2025, calculateL
 
 // Get comprehensive capital gains information for display
 export function getCapitalGainsAnalysis(incomeSources, ordinaryIncome, filingStatus) {
+  // Ensure incomeSources is an array
+  if (!Array.isArray(incomeSources)) {
+    incomeSources = [];
+  }
   const getYearlyAmount = (source) => {
     return source.frequency === 'monthly' ? source.amount * 12 : source.amount;
   };
