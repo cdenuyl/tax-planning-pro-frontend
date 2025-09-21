@@ -7,6 +7,10 @@ import { calculateComprehensiveTaxes } from './taxCalculations.js';
  * Calculate the true effective marginal rate by testing actual tax calculations
  */
 export function calculateTrueEffectiveMarginalRate(incomeSources, taxpayerAge, spouseAge, filingStatus, appSettings, testAmount = 1000) {
+  // Ensure incomeSources is an array
+  if (!Array.isArray(incomeSources)) {
+    incomeSources = [];
+  }
   // Calculate base tax
   const baseCalc = calculateComprehensiveTaxes(incomeSources, taxpayerAge, spouseAge, filingStatus, null, appSettings);
   
