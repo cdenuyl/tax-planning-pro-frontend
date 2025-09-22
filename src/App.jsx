@@ -1391,7 +1391,7 @@ function App() {
             <div className="detail-item">
               <h4>Federal Tax Brackets</h4>
               <ul>
-                {taxData.federal.brackets.map(bracket => (
+                {taxData?.federal?.brackets?.map(bracket => (
                   <li key={bracket.rate}>
                     {formatPercentage(bracket.rate)}: {formatCurrency(bracket.taxInBracket)}
                   </li>
