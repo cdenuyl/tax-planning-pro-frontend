@@ -86,7 +86,11 @@ const LoginPage = ({ onLogin }) => {
       if (result.success) {
         setSuccess('Login successful!');
         setTimeout(() => {
-          onLogin(result.user, result.session);
+          if (typeof onLogin === 'function') {
+            onLogin(result.user, result.session);
+          } else {
+            console.error('onLogin is not a function');
+          }
         }, 500);
       } else {
         setError(result.error);
@@ -258,15 +262,7 @@ const LoginPage = ({ onLogin }) => {
                   </Button>
                 </form>
                 
-                {/* Demo credentials info */}
-                <div className="mt-4 p-3 bg-blue-50 rounded-lg border border-blue-200">
-                  <p className="text-sm text-blue-800 font-medium mb-2">Demo Credentials:</p>
-                  <div className="space-y-1 text-xs text-blue-700">
-                    <div><strong>Admin:</strong> admin@taxplanning.com / TaxPlan123!</div>
-                    <div><strong>Advisor:</strong> advisor@taxplanning.com / TaxPlan123!</div>
-                    <div><strong>Assistant:</strong> assistant@taxplanning.com / TaxPlan123!</div>
-                  </div>
-                </div>
+
               </TabsContent>
               
               {/* Register Tab */}
