@@ -879,7 +879,7 @@ export function InteractiveTaxMap({ calculations, incomeSources, settings = {}, 
       {/* Income Sources Display */}
       <div className="mb-4">
         <div className="flex flex-wrap gap-2 mb-2">
-          {incomeSources.map((source) => (
+          {Array.isArray(incomeSources) && incomeSources.map((source) => (
             <button
               key={source.id}
               onClick={() => onToggleIncomeSource && onToggleIncomeSource(source.id)}
