@@ -6,7 +6,7 @@ import { getIrmaaThresholds, getSocialSecurityThresholds } from '../utils/irmaaT
 import { calculateFICATaxes } from '../utils/ficaTaxes.js';
 
 export function InteractiveTaxMap({ calculations, incomeSources, settings = {}, appSettings = {}, ficaEnabled = false, onToggleIncomeSource, onUpdateSettings }) {
-  const { totalIncome, federalTaxableIncome, federalTax, netStateTax, effectiveRateFederal, effectiveRateTotal, filingStatus = 'single' } = calculations;
+  const { totalIncome, federalTaxableIncome, federalTax, netStateTax, effectiveRateFederal, effectiveRateTotal, filingStatus = 'single' } = calculations || {};
   const { incomeType = 'ordinary', jurisdiction = 'federal', view = 'detailed', methodology = 'incremental' } = settings;
   
   // Helper function to get yearly amount (convert monthly to yearly if needed)
