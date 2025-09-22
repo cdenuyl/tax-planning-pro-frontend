@@ -1376,13 +1376,13 @@ function App() {
         <div className="right-pane">
           <div className="summary-section">
             <h3>Summary</h3>
-            <p><strong>Total Income:</strong> {formatCurrency(taxData.summary.totalIncome)}</p>
-            <p><strong>AGI:</strong> {formatCurrency(taxData.summary.agi)}</p>
-            <p><strong>Taxable Income:</strong> {formatCurrency(taxData.summary.taxableIncome)}</p>
-            <p><strong>Federal Tax:</strong> {formatCurrency(taxData.summary.federalTax)}</p>
-            <p><strong>State Tax:</strong> {formatCurrency(taxData.summary.stateTax)}</p>
-            <p><strong>Total Tax:</strong> {formatCurrency(taxData.summary.totalTax)}</p>
-            <p><strong>Effective Tax Rate:</strong> {formatPercentage(taxData.summary.effectiveTaxRate)}</p>
+            <p><strong>Total Income:</strong> {formatCurrency(taxData?.summary?.totalIncome)}</p>
+            <p><strong>AGI:</strong> {formatCurrency(taxData?.summary?.agi)}</p>
+            <p><strong>Taxable Income:</strong> {formatCurrency(taxData?.summary?.taxableIncome)}</p>
+            <p><strong>Federal Tax:</strong> {formatCurrency(taxData?.summary?.federalTax)}</p>
+            <p><strong>State Tax:</strong> {formatCurrency(taxData?.summary?.stateTax)}</p>
+            <p><strong>Total Tax:</strong> {formatCurrency(taxData?.summary?.totalTax)}</p>
+            <p><strong>Effective Tax Rate:</strong> {formatPercentage(taxData?.summary?.effectiveTaxRate)}</p>
           </div>
 
           <div className="details-section">
