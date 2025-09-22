@@ -30,7 +30,7 @@ export const AMT_TAX_RATES = {
 };
 
 // Calculate Alternative Minimum Tax
-export function calculateAMT(incomeSources, deductions, filingStatus) {
+export function calculateAMT(incomeSources, deductions = {}, filingStatus) {
   const getYearlyAmount = (source) => {
     return source.frequency === 'monthly' ? source.amount * 12 : source.amount;
   };
@@ -66,7 +66,7 @@ export function calculateAMT(incomeSources, deductions, filingStatus) {
 }
 
 // Calculate AMT adjustments and preferences
-function calculateAMTAdjustments(incomeSources, deductions, filingStatus) {
+function calculateAMTAdjustments(incomeSources = [], deductions = {}, filingStatus) {
   let totalAdjustments = 0;
   const adjustmentDetails = [];
 
@@ -96,7 +96,7 @@ function calculateAMTAdjustments(incomeSources, deductions, filingStatus) {
   // Note: Personal exemptions were suspended 2018-2025 under TCJA
   
   // Tax-exempt interest from private activity bonds
-  const privateActivityBondInterest = incomeSources
+  const privateActivityBondInterest = (Array.isArray(incomeSources) ? incomeSources : [])
     .filter(source => source.enabled && source.type === 'private-activity-bond-interest')
     .reduce((sum, source) => sum + (source.frequency === 'monthly' ? source.amount * 12 : source.amount), 0);
   
