@@ -114,7 +114,7 @@ export function InteractiveTaxMap({ calculations, incomeSources, settings = {}, 
       return source.amount;
     };
 
-    const enabledSources = incomeSources.filter(source => source.enabled);
+    const enabledSources = Array.isArray(incomeSources) ? incomeSources.filter(source => source.enabled) : [];
     const ssSource = enabledSources.find(source => source.type === 'social-security');
     const ssAmount = ssSource ? getYearlyAmount(ssSource) : 0;
     const otherSources = enabledSources.filter(source => source.type !== 'social-security');
