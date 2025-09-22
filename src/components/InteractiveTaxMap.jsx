@@ -118,7 +118,7 @@ export function InteractiveTaxMap({ calculations, incomeSources, settings = {}, 
     const ssSource = enabledSources.find(source => source.type === 'social-security');
     const ssAmount = ssSource ? getYearlyAmount(ssSource) : 0;
     const otherSources = enabledSources.filter(source => source.type !== 'social-security');
-    const totalOtherIncome = otherSources.reduce((sum, source) => sum + getYearlyAmount(source), 0);
+    const totalOtherIncome = Array.isArray(otherSources) ? otherSources.reduce((sum, source) => sum + getYearlyAmount(source), 0) : 0;
     
     // Set income range and step based on methodology
     let maxIncome, step, incomeBase;
@@ -182,11 +182,13 @@ export function InteractiveTaxMap({ calculations, incomeSources, settings = {}, 
       
       if (incomeType === 'capital') {
         // Capital gains mode: Use standardized ordinary income + variable capital gains
-        // Get current ordinary income (excluding capital gains) for baseline
-        const currentOrdinaryIncome = enabledSources
-          .filter(source => !['long-term-capital-gains', 'short-term-capital-gains', 'qualified-dividends'].includes(source.type))
-          .reduce((sum, source) => sum + getYearlyAmount(source), 0);
-        
+        // Get current ordinary income (econst currentOrdinaryIncome = Array.isArray(enabledSources) ? enabledSources
+          .filter(source => ![
+            'long-term-capital-gains', 
+            'short-term-capital-gains', 
+            'qualified-dividends'
+          ].includes(source.type))
+          .reduce((sum, source) => sum + getYearlyAmount(source), 0) : 0;    
         // Create standardized sources with current ordinary income + variable capital gains
         tempSources = [
           // Keep current ordinary income sources as baseline
