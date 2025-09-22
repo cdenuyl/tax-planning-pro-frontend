@@ -97,7 +97,7 @@ function calculateAMTAdjustments(incomeSources = [], deductions = {}, filingStat
   
   // Tax-exempt interest from private activity bonds
   const privateActivityBondInterest = (Array.isArray(incomeSources) ? incomeSources : [])
-    .filter(source => source.enabled && source.type === 'private-activity-bond-interest')
+    .filter(source => source && source.enabled && source.type === 'private-activity-bond-interest')
     .reduce((sum, source) => sum + (source.frequency === 'monthly' ? source.amount * 12 : source.amount), 0);
   
   if (privateActivityBondInterest > 0) {
