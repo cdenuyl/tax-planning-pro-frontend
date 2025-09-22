@@ -661,7 +661,8 @@ function App() {
       spouse.age, 
       taxpayer.filingStatus, 
       deductions, 
-      appSettings
+      appSettings, 
+      ficaEnabled
     );
   }, [taxpayer, spouse, incomeSources, deductions, appSettings, ficaEnabled]);
 

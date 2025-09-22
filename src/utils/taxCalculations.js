@@ -422,7 +422,7 @@ function calculateRothIRATaxation(source, taxpayerAge, spouseAge) {
   };
 }
 
-export function calculateComprehensiveTaxes(incomeSources = [], taxpayerAge = 65, spouseAge = null, filingStatus = 'single', deductions = null, appSettings = {}) {
+export function calculateComprehensiveTaxes(incomeSources = [], taxpayerAge = 65, spouseAge = null, filingStatus = 'single', deductions = null, appSettings = {}, ficaEnabled = false) {
   // Ensure incomeSources is an array
   if (!Array.isArray(incomeSources)) {
     incomeSources = [];
