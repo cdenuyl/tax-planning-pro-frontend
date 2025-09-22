@@ -168,8 +168,8 @@ function App() {
   // Extract current scenario data for easier access
   const [activeTab, setActiveTab] = useState(activeScenario.data.activeTab || 'people');
   const [ficaEnabled, setFicaEnabled] = useState(activeScenario.data.ficaEnabled);
-  const [taxpayer, setTaxpayer] = useState(activeScenario.data.taxpayer || { filingStatus: 'single' });
-  const [spouse, setSpouse] = useState(activeScenario.data.spouse || { filingStatus: 'single' });
+  const [taxpayer, setTaxpayer] = useState(activeScenario.data.taxpayer && typeof activeScenario.data.taxpayer === 'object' ? activeScenario.data.taxpayer : { age: null, filingStatus: 'single', dateOfBirth: '' });
+  const [spouse, setSpouse] = useState(activeScenario.data.spouse && typeof activeScenario.data.spouse === 'object' ? activeScenario.data.spouse : { age: null, filingStatus: 'single', dateOfBirth: '' });
   const [incomeSources, setIncomeSources] = useState(activeScenario.data.incomeSources);
   const [deductions, setDeductions] = useState(activeScenario.data.deductions);
   const [taxMapSettings, setTaxMapSettings] = useState(activeScenario.data.taxMapSettings);
