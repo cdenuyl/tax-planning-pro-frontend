@@ -261,7 +261,7 @@ export function InteractiveTaxMap({ calculations, incomeSources, settings = {}, 
       }
       
       // Calculate taxes at this income level
-      const tempCalculations = calculateComprehensiveTaxes(tempSources, calculations.taxpayerAge, calculations.spouseAge, filingStatus, null, appSettings);
+      const tempCalculations = calculateComprehensiveTaxes(tempSources, calculations?.taxpayerAge, calculations?.spouseAge, filingStatus, null, appSettings);
       
       // Determine which rate to use based on income type setting
       let baseMarginalRate, baseLabel;
