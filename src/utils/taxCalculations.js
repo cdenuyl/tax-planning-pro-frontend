@@ -423,6 +423,9 @@ function calculateRothIRATaxation(source, taxpayerAge, spouseAge) {
 }
 
 export function calculateComprehensiveTaxes(incomeSources = [], taxpayerAge = 65, spouseAge = null, filingStatus = 'single', deductions = null, appSettings = {}, ficaEnabled = false) {
+  if (typeof filingStatus !== 'string') {
+    filingStatus = 'single';
+  }
   // Ensure incomeSources is an array
   if (!Array.isArray(incomeSources)) {
     incomeSources = [];
