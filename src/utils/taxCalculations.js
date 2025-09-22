@@ -691,7 +691,7 @@ export function calculateComprehensiveTaxes(incomeSources = [], taxpayerAge = 65
     const netInvestmentIncome = calculateNetInvestmentIncome(adjustedIncomeSources) ?? 0;
   const safeFederalAGI = typeof federalAGI === 'number' && !isNaN(federalAGI) ? federalAGI : 0;
   const safeNetInvestmentIncome = typeof netInvestmentIncome === 'number' && !isNaN(netInvestmentIncome) ? netInvestmentIncome : 0;
-  const niitCalculation = getNIITAnalysis(filingStatus, safeFederalAGI, safeNetInvestmentIncome);
+  const niitCalculation = getNIITAnalysis(filingStatus, safeFederalAGI, netInvestmentIncome);
   
   // TODO: Comprehensive marginal rate analysis will be calculated separately in UI to avoid circular dependency
   const marginalRateAnalysis = {
