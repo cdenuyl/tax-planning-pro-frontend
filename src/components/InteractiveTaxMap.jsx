@@ -966,7 +966,7 @@ export function InteractiveTaxMap({ calculations, incomeSources, settings = {}, 
               
               // Get Social Security amount for provisional income calculation
               const socialSecurityAmount = incomeSources
-                .filter(source => source.type === 'social-security' && source.enabled)
+                ?.filter(source => source.type === 'social-security' && source.enabled) || []
                 .reduce((sum, source) => sum + getYearlyAmount(source), 0);
               
               // Only process Social Security zones if there's actually Social Security income
