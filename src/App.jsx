@@ -728,7 +728,7 @@ function App() {
 
   // Memoized NIIT Analysis
   const niitAnalysis = useMemo(() => {
-    return getNIITAnalysis(taxData, taxpayer.filingStatus);
+    return getNIITAnalysis(taxpayer.filingStatus, taxData.federalAGI, taxData.netInvestmentIncome);
   }, [taxData, taxpayer.filingStatus]);
 
   // Memoized Additional Medicare Tax Analysis
