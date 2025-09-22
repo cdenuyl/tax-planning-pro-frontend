@@ -688,7 +688,7 @@ export function calculateComprehensiveTaxes(incomeSources = [], taxpayerAge = 65
   }
   
   // Calculate NIIT (Net Investment Income Tax)
-    const netInvestmentIncome = calculateNetInvestmentIncome(adjustedIncomeSources) || 0;
+    const netInvestmentIncome = calculateNetInvestmentIncome(adjustedIncomeSources) ?? 0;
   const safeFederalAGI = typeof federalAGI === 'number' && !isNaN(federalAGI) ? federalAGI : 0;
   const safeNetInvestmentIncome = typeof netInvestmentIncome === 'number' && !isNaN(netInvestmentIncome) ? netInvestmentIncome : 0;
   const niitCalculation = getNIITAnalysis(filingStatus, safeFederalAGI, safeNetInvestmentIncome);
