@@ -764,7 +764,7 @@ export function calculateComprehensiveTaxes(incomeSources = [], taxpayerAge = 65
     // Add NIIT data
     niit: {
       ...niitCalculation,
-      analysis: niitAnalysis,
+      analysis: niitCalculation,
       netInvestmentIncome: netInvestmentIncome
     }
   };
