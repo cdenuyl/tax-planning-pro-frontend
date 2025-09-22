@@ -359,8 +359,8 @@ export function InteractiveTaxMap({ calculations, incomeSources, settings = {}, 
       
       // Check if taxpayer or spouse is 65+ (eligible for senior deduction)
       // Get ages from calculations object (passed from App.jsx)
-      const taxpayerAge = calculations.taxpayerAge || 0;
-      const spouseAge = calculations.spouseAge || 0;
+      const taxpayerAge = calculations?.taxpayerAge || 0;
+      const spouseAge = calculations?.spouseAge || 0;
       const hasEligibleSenior = taxpayerAge >= 65 || spouseAge >= 65;
       
       if (hasEligibleSenior) {
