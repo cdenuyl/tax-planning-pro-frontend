@@ -1202,7 +1202,7 @@ export function InteractiveTaxMap({ calculations, incomeSources, settings = {}, 
             
             {/* Current position indicator */}
             <ReferenceLine 
-              x={methodology === 'incremental' ? totalIncome - incomeSources.filter(s => s.type === 'social-security' && s.enabled).reduce((sum, s) => sum + getYearlyAmount(s), 0) : totalIncome} 
+              x={methodology === 'incremental' ? totalIncome - (incomeSources?.filter(s => s.type === 'social-security' && s.enabled) || []).reduce((sum, s) => sum + getYearlyAmount(s), 0) : totalIncome} 
               stroke="#16a34a" 
               strokeWidth={3}
               strokeDasharray="none"
