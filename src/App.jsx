@@ -656,12 +656,12 @@ function App() {
   // Memoized tax calculations to prevent re-rendering
   const taxData = useMemo(() => {
     return calculateComprehensiveTaxes(
-      taxpayer, 
-      spouse, 
       incomeSources, 
+      taxpayer.age, 
+      spouse.age, 
+      taxpayer.filingStatus, 
       deductions, 
-      appSettings, 
-      ficaEnabled
+      appSettings
     );
   }, [taxpayer, spouse, incomeSources, deductions, appSettings, ficaEnabled]);
 

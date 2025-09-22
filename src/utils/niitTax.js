@@ -34,7 +34,7 @@ export const NIIT_THRESHOLDS = {
  * @param {string} filingStatus - Tax filing status
  * @returns {object} NIIT calculation details
  */
-export function calculateNIIT(modifiedAGI, netInvestmentIncome, filingStatus) {
+export function calculateNIIT(filingStatus, modifiedAGI, netInvestmentIncome) {
   try {
     // Input validation
     if (typeof modifiedAGI !== 'number' || isNaN(modifiedAGI)) {
@@ -53,7 +53,7 @@ export function calculateNIIT(modifiedAGI, netInvestmentIncome, filingStatus) {
     }
     
     // Use the consolidated tax engine
-    const result = calculateNIITEngine(modifiedAGI, netInvestmentIncome, filingStatus);
+    const result = calculateNIITEngine(filingStatus, modifiedAGI, netInvestmentIncome);
     
     // Transform result for backward compatibility
     return {
