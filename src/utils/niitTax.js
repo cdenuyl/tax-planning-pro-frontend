@@ -135,7 +135,7 @@ export function calculateNetInvestmentIncome(incomeSources) {
  * @param {string} filingStatus - Filing status
  * @returns {object} NIIT analysis for UI display
  */
-export function getNIITAnalysis(modifiedAGI, netInvestmentIncome, filingStatus) {
+export function getNIITAnalysis(filingStatus, modifiedAGI, netInvestmentIncome) {
   // Calculate NIIT
   const niit = calculateNIIT(filingStatus, modifiedAGI, netInvestmentIncome);
   
