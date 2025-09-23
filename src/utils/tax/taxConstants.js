@@ -181,6 +181,7 @@ export function normalizeFilingStatus(filingStatus) {
       return FILING_STATUS.SINGLE;
     case 'marriedfilingjointly':
     case 'marriedjoint':
+    case 'married-jointly':
     case 'joint':
       return FILING_STATUS.MARRIED_FILING_JOINTLY;
     case 'headofhousehold':

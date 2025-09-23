@@ -2,17 +2,17 @@ import React, { useState } from 'react';
 import { Button } from '@/components/ui/button.jsx';
 
 const ClientSelector = ({ 
-  clients, 
+  clients = [], 
   activeClientId, 
-  onClientChange, 
-  onNewClient, 
-  onClientSettings,
-  onEditClient 
+  onClientChange = () => {}, 
+  onNewClient = () => {}, 
+  onClientSettings = () => {},
+  onEditClient = () => {} 
 }) => {
   const [showDropdown, setShowDropdown] = useState(false);
   
-  const activeClient = clients.find(c => c.id === activeClientId);
-  const activeScenario = activeClient?.scenarios.find(s => s.isActive);
+  const activeClient = clients?.find(c => c?.id === activeClientId);
+  const activeScenario = activeClient?.scenarios?.find(s => s?.isActive);
   
   return (
     <div className="relative">
@@ -42,7 +42,11 @@ const ClientSelector = ({
         
         {/* Quick Actions */}
         <Button
-          onClick={onNewClient}
+          onClick={() => {
+            if (typeof onNewClient === 'function') {
+              onNewClient();
+            }
+          }}
           className="px-3 py-2 bg-green-600 hover:bg-green-700 text-white text-sm"
         >
           + New Client
@@ -50,7 +54,11 @@ const ClientSelector = ({
         
         {activeClient && (
           <Button
-            onClick={() => onEditClient(activeClient.id)}
+            onClick={() => {
+              if (typeof onEditClient === 'function') {
+                onEditClient(activeClient.id);
+              }
+            }}
             className="px-3 py-2 bg-gray-600 hover:bg-gray-700 text-white text-sm"
           >
             Edit Profile
@@ -66,15 +74,17 @@ const ClientSelector = ({
             
             {/* Client List */}
             <div className="space-y-2 max-h-64 overflow-y-auto">
-              {clients.filter(c => !c.profile.isArchived).map(client => {
-                const isActive = client.id === activeClientId;
-                const activeScenario = client.scenarios.find(s => s.isActive);
+              {clients?.filter(c => !c?.profile?.isArchived).map(client => {
+                const isActive = client?.id === activeClientId;
+                const activeScenario = client?.scenarios?.find(s => s?.isActive);
                 
                 return (
                   <div
-                    key={client.id}
+                    key={client?.id || Math.random()}
                     onClick={() => {
-                      onClientChange(client.id);
+                      if (typeof onClientChange === 'function' && client?.id) {
+                        onClientChange(client.id);
+                      }
                       setShowDropdown(false);
                     }}
                     className={`p-3 rounded-lg cursor-pointer transition-colors ${
@@ -86,23 +96,23 @@ const ClientSelector = ({
                     <div className="flex items-center justify-between">
                       <div>
                         <div className="font-medium text-gray-900">
-                          {client.profile.clientName}
+                          {client?.profile?.clientName || 'Unnamed Client'}
                         </div>
                         <div className="text-sm text-gray-600">
-                          {client.profile.primaryContact}
+                          {client?.profile?.primaryContact || 'No contact info'}
                         </div>
                         {activeScenario && (
                           <div className="text-xs text-gray-500 mt-1">
-                            Active: {activeScenario.name}
+                            Active: {activeScenario?.name || 'Unnamed Scenario'}
                           </div>
                         )}
                       </div>
                       
                       <div className="text-right">
                         <div className="text-xs text-gray-500">
-                          {client.scenarios.length} scenario{client.scenarios.length !== 1 ? 's' : ''}
+                          {client?.scenarios?.length || 0} scenario{(client?.scenarios?.length || 0) !== 1 ? 's' : ''}
                         </div>
-                        {client.profile.tags && client.profile.tags.length > 0 && (
+                        {client?.profile?.tags && client.profile.tags.length > 0 && (
                           <div className="flex flex-wrap gap-1 mt-1">
                             {client.profile.tags.slice(0, 2).map(tag => (
                               <span 
@@ -122,7 +132,7 @@ const ClientSelector = ({
             </div>
             
             {/* No Clients Message */}
-            {clients.filter(c => !c.profile.isArchived).length === 0 && (
+            {clients?.filter(c => !c?.profile?.isArchived).length === 0 && (
               <div className="text-center py-8 text-gray-500">
                 <div className="text-lg mb-2">No clients yet</div>
                 <div className="text-sm">Create your first client to get started</div>
@@ -133,7 +143,9 @@ const ClientSelector = ({
             <div className="border-t border-gray-200 mt-4 pt-4 flex justify-between">
               <Button
                 onClick={() => {
-                  onNewClient();
+                  if (typeof onNewClient === 'function') {
+                    onNewClient();
+                  }
                   setShowDropdown(false);
                 }}
                 className="px-4 py-2 bg-green-600 hover:bg-green-700 text-white text-sm"
@@ -144,7 +156,9 @@ const ClientSelector = ({
               {activeClient && (
                 <Button
                   onClick={() => {
-                    onClientSettings(activeClient.id);
+                    if (typeof onClientSettings === 'function') {
+                      onClientSettings(activeClient.id);
+                    }
                     setShowDropdown(false);
                   }}
                   className="px-4 py-2 bg-gray-600 hover:bg-gray-700 text-white text-sm"
