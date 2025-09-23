@@ -1,9 +1,5 @@
 {
-  "build": {
-    "env": {
-      "VITE_APP_BUILD_PATH": "dist"
-    }
-  },
+  "outputDirectory": "dist",
   "rewrites": [
     { "source": "/(.*)", "destination": "/index.html" }
   ]
