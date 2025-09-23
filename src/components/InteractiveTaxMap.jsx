@@ -44,8 +44,7 @@ export function InteractiveTaxMap({ calculations = {}, incomeSources = [], setti
   const calculateIrmaaPositions = useMemo(() => {
     const positions = {};
     
-    // Ensure appSettings exists
-    const safeAppSettings = appSettings || {};
+
     
     // Standard reference scenario for consistent positioning
     const referenceSSAmount = 36000; // Standard SS amount for calculations
@@ -85,7 +84,7 @@ export function InteractiveTaxMap({ calculations = {}, incomeSources = [], setti
             }
           });
           
-          const testCalculations = calculateComprehensiveTaxes(testSources, 65, null, filingStatus, null, safeAppSettings);
+          const testCalculations = calculateComprehensiveTaxes(testSources, 65, null, filingStatus, null, appSettings);
           const testMAGI = testCalculations.federalTaxableIncome;
           
           // Check if we're close enough
@@ -120,9 +119,7 @@ export function InteractiveTaxMap({ calculations = {}, incomeSources = [], setti
       }
     });
     
-    return positions;
-  }, [methodology, filingStatus, appSettings]);
-  
+    return positions;  }, [methodology, filingStatus, appSettings]);
   // Generate tax map data points with methodology-specific calculations
   const taxMapData = useMemo(() => {
     const data = [];
