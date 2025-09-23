@@ -368,52 +368,11 @@ export const updateUserProfile = (userId, updates) => {
 
 /**
  * Initialize default users (for demo/development)
+ * Note: This function is disabled for production deployment
  */
 export const initializeDefaultUser = async () => {
-  const users = getUsers();
-  
-  // If no users exist, create demo users
-  if (users.length === 0) {
-    const demoUsers = [
-      {
-        email: 'admin@taxplanning.com',
-        password: 'TaxPlan123!',
-        firstName: 'System',
-        lastName: 'Administrator',
-        role: USER_ROLES.ADMIN,
-        firmName: 'Tax Planning Firm',
-        title: 'Administrator'
-      },
-      {
-        email: 'advisor@taxplanning.com',
-        password: 'TaxPlan123!',
-        firstName: 'John',
-        lastName: 'Advisor',
-        role: USER_ROLES.ADVISOR,
-        firmName: 'Tax Planning Firm',
-        title: 'Senior Tax Advisor'
-      },
-      {
-        email: 'assistant@taxplanning.com',
-        password: 'TaxPlan123!',
-        firstName: 'Jane',
-        lastName: 'Assistant',
-        role: USER_ROLES.ASSISTANT,
-        firmName: 'Tax Planning Firm',
-        title: 'Tax Assistant'
-      }
-    ];
-    
-    for (const userData of demoUsers) {
-      const result = await createUser(userData);
-      if (result.success) {
-        console.log(`Demo user created: ${result.user.email}`);
-      }
-    }
-    
-    return true;
-  }
-  
+  // Demo user initialization is disabled for production
+  // Users must be created through the registration process
   return false;
 };
 

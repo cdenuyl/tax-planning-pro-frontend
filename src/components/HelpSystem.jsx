@@ -162,8 +162,8 @@ const HelpSystem = () => {
                 <div class="flex items-start space-x-3">
                   <div class="bg-blue-600 text-white rounded-full w-6 h-6 flex items-center justify-center text-sm font-semibold">1</div>
                   <div>
-                    <h4 class="font-semibold">Login and Explore</h4>
-                    <p class="text-sm text-gray-600">Use the demo credentials to login and familiarize yourself with the interface.</p>
+                    <h4 class="font-semibold">Create Account and Login</h4>
+                    <p class="text-sm text-gray-600">Register for a new account or login with existing credentials to access the application.</p>
                   </div>
                 </div>
                 
@@ -206,12 +206,11 @@ const HelpSystem = () => {
             <div class="space-y-4">
               <p>Tax-on-a-Me uses a secure authentication system with role-based access control.</p>
               
-              <div class="bg-green-50 p-4 rounded-lg border border-green-200">
-                <h4 class="font-semibold text-green-900 mb-2">Demo Credentials:</h4>
-                <div class="text-green-800 space-y-1 text-sm">
-                  <div><strong>Admin:</strong> admin@taxplanning.com / TaxPlan123!</div>
-                  <div><strong>Advisor:</strong> advisor@taxplanning.com / TaxPlan123!</div>
-                  <div><strong>Assistant:</strong> assistant@taxplanning.com / TaxPlan123!</div>
+              <div class="bg-blue-50 p-4 rounded-lg border border-blue-200">
+                <h4 class="font-semibold text-blue-900 mb-2">Getting Started:</h4>
+                <div class="text-blue-800 space-y-1 text-sm">
+                  <div>Create your account using the registration form to get started.</div>
+                  <div>Contact your administrator for access if you're part of an existing team.</div>
                 </div>
               </div>
               
