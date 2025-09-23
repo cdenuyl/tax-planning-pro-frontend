@@ -655,97 +655,162 @@ function App() {
 
   // Memoized tax calculations to prevent re-rendering
   const taxData = useMemo(() => {
+    // Ensure taxpayer and spouse have safe defaults
+    const safeTaxpayer = taxpayer || { age: null, filingStatus: 'single' };
+    const safeSpouse = spouse || { age: null };
+    const safeIncomeSources = Array.isArray(incomeSources) ? incomeSources : [];
+    const safeDeductions = deductions || {};
+    const safeAppSettings = appSettings || {};
+    
     return calculateComprehensiveTaxes(
-      incomeSources, 
-      taxpayer.age, 
-      spouse.age, 
-      taxpayer.filingStatus && typeof taxpayer.filingStatus === 'string' ? taxpayer.filingStatus : 'single', 
-      deductions, 
-      appSettings, 
+      safeIncomeSources, 
+      safeTaxpayer.age, 
+      safeSpouse.age, 
+      safeTaxpayer.filingStatus && typeof safeTaxpayer.filingStatus === 'string' ? safeTaxpayer.filingStatus : 'single', 
+      safeDeductions, 
+      safeAppSettings, 
       ficaEnabled
     );
   }, [taxpayer, spouse, incomeSources, deductions, appSettings, ficaEnabled]);
 
   // Memoized AI optimization recommendations
   const aiRecommendations = useMemo(() => {
-    return generateOptimizationRecommendations(taxData, incomeSources, deductions, taxpayer, spouse);
+    const safeTaxpayer = taxpayer || { age: null, filingStatus: 'single' };
+    const safeSpouse = spouse || { age: null };
+    const safeIncomeSources = Array.isArray(incomeSources) ? incomeSources : [];
+    const safeDeductions = deductions || {};
+    
+    return generateOptimizationRecommendations(taxData, safeIncomeSources, safeDeductions, safeTaxpayer, safeSpouse);
   }, [taxData, incomeSources, deductions, taxpayer, spouse]);
 
   // Memoized multi-year strategy
   const multiYearStrategy = useMemo(() => {
-    return generateMultiYearStrategy(taxData, incomeSources, deductions, taxpayer, spouse, appSettings);
+    const safeTaxpayer = taxpayer || { age: null, filingStatus: 'single' };
+    const safeSpouse = spouse || { age: null };
+    const safeIncomeSources = Array.isArray(incomeSources) ? incomeSources : [];
+    const safeDeductions = deductions || {};
+    const safeAppSettings = appSettings || {};
+    
+    return generateMultiYearStrategy(taxData, safeIncomeSources, safeDeductions, safeTaxpayer, safeSpouse, safeAppSettings);
   }, [taxData, incomeSources, deductions, taxpayer, spouse, appSettings]);
 
   // Memoized Michigan Homestead Credit calculation
   const michiganHomesteadCredit = useMemo(() => {
-    return calculateMichiganHomesteadCredit(taxpayer, spouse, taxData?.summary?.totalIncome || 0, appSettings);
+    const safeTaxpayer = taxpayer || { age: null, filingStatus: 'single' };
+    const safeSpouse = spouse || { age: null };
+    const safeAppSettings = appSettings || {};
+    const safeTaxData = taxData || {};
+    const safeSummary = safeTaxData.summary || {};
+    
+    return calculateMichiganHomesteadCredit(safeTaxpayer, safeSpouse, safeSummary.totalIncome || 0, safeAppSettings);
   }, [taxpayer, spouse, taxData, appSettings]);
 
   // Memoized Michigan Property Tax Exemptions
   const michiganPropertyTaxExemptions = useMemo(() => {
-    return calculateMichiganPropertyTaxExemptions(taxpayer, spouse, appSettings);
+    const safeTaxpayer = taxpayer || { age: null, filingStatus: 'single' };
+    const safeSpouse = spouse || { age: null };
+    const safeAppSettings = appSettings || {};
+    
+    return calculateMichiganPropertyTaxExemptions(safeTaxpayer, safeSpouse, safeAppSettings);
   }, [taxpayer, spouse, appSettings]);
 
   // Memoized Annuity Taxation analysis
   const annuityTaxation = useMemo(() => {
-    const annuitySource = incomeSources.find(s => s.type === 'annuity');
+    const safeIncomeSources = Array.isArray(incomeSources) ? incomeSources : [];
+    const annuitySource = safeIncomeSources.find(s => s && s.type === 'annuity');
     if (!annuitySource) return null;
-    return calculateAnnuityTaxation(annuitySource, taxpayer, spouse);
+    
+    const safeTaxpayer = taxpayer || { age: null, filingStatus: 'single' };
+    const safeSpouse = spouse || { age: null };
+    
+    return calculateAnnuityTaxation(annuitySource, safeTaxpayer, safeSpouse);
   }, [incomeSources, taxpayer, spouse]);
 
   // Memoized Life Insurance Taxation analysis
   const lifeInsuranceTaxation = useMemo(() => {
-    const lifeInsuranceSource = incomeSources.find(s => s.type === 'life-insurance');
+    const safeIncomeSources = Array.isArray(incomeSources) ? incomeSources : [];
+    const lifeInsuranceSource = safeIncomeSources.find(s => s && s.type === 'life-insurance');
     if (!lifeInsuranceSource) return null;
-    return calculateLifeInsuranceIncomeStream(lifeInsuranceSource, taxpayer, spouse);
+    
+    const safeTaxpayer = taxpayer || { age: null, filingStatus: 'single' };
+    const safeSpouse = spouse || { age: null };
+    
+    return calculateLifeInsuranceIncomeStream(lifeInsuranceSource, safeTaxpayer, safeSpouse);
   }, [incomeSources, taxpayer, spouse]);
 
   // Memoized IRMAA thresholds
   const irmaaThresholds = useMemo(() => {
-    return getIrmaaThresholds(taxpayer.filingStatus, appSettings.taxYear);
-  }, [taxpayer.filingStatus, appSettings.taxYear]);
+    const safeTaxpayer = taxpayer || { filingStatus: 'single' };
+    const safeAppSettings = appSettings || { taxYear: 2025 };
+    
+    return getIrmaaThresholds(safeTaxpayer.filingStatus, safeAppSettings.taxYear);
+  }, [taxpayer, appSettings]);
 
   // Memoized Social Security thresholds
   const socialSecurityThresholds = useMemo(() => {
-    return getSocialSecurityThresholds(taxpayer.filingStatus);
-  }, [taxpayer.filingStatus]);
+    const safeTaxpayer = taxpayer || { filingStatus: 'single' };
+    
+    return getSocialSecurityThresholds(safeTaxpayer.filingStatus);
+  }, [taxpayer]);
 
   // Memoized Comprehensive Marginal Rate Analysis
   const comprehensiveMarginalAnalysis = useMemo(() => {
-    return getComprehensiveMarginalAnalysis(taxData, taxpayer, spouse, incomeSources, appSettings);
+    const safeTaxpayer = taxpayer || { age: null, filingStatus: 'single' };
+    const safeSpouse = spouse || { age: null };
+    const safeIncomeSources = Array.isArray(incomeSources) ? incomeSources : [];
+    const safeAppSettings = appSettings || {};
+    
+    return getComprehensiveMarginalAnalysis(taxData, safeTaxpayer, safeSpouse, safeIncomeSources, safeAppSettings);
   }, [taxData, taxpayer, spouse, incomeSources, appSettings]);
 
   // Memoized Capital Gains Analysis
   const capitalGainsAnalysis = useMemo(() => {
-    return getCapitalGainsAnalysis(taxData, taxpayer, incomeSources, appSettings);
+    const safeTaxpayer = taxpayer || { age: null, filingStatus: 'single' };
+    const safeIncomeSources = Array.isArray(incomeSources) ? incomeSources : [];
+    const safeAppSettings = appSettings || {};
+    
+    return getCapitalGainsAnalysis(taxData, safeTaxpayer, safeIncomeSources, safeAppSettings);
   }, [taxData, taxpayer, incomeSources, appSettings]);
 
   // Memoized FICA Tax Analysis
   const ficaTaxAnalysis = useMemo(() => {
     if (!ficaEnabled) return null;
-    return calculateFICATaxes(incomeSources, taxpayer.filingStatus);
-  }, [ficaEnabled, incomeSources, taxpayer.filingStatus]);
+    
+    const safeIncomeSources = Array.isArray(incomeSources) ? incomeSources : [];
+    const safeTaxpayer = taxpayer || { filingStatus: 'single' };
+    
+    return calculateFICATaxes(safeIncomeSources, safeTaxpayer.filingStatus);
+  }, [ficaEnabled, incomeSources, taxpayer]);
 
   // Memoized NIIT Analysis
   const niitAnalysis = useMemo(() => {
-    return getNIITAnalysis(taxpayer.filingStatus, taxData.federalAGI, taxData.netInvestmentIncome);
-  }, [taxData, taxpayer.filingStatus]);
+    const safeTaxpayer = taxpayer || { filingStatus: 'single' };
+    const safeTaxData = taxData || {};
+    
+    return getNIITAnalysis(safeTaxpayer.filingStatus, safeTaxData.federalAGI || 0, safeTaxData.netInvestmentIncome || 0);
+  }, [taxData, taxpayer]);
 
   // Memoized Additional Medicare Tax Analysis
   const additionalMedicareTaxAnalysis = useMemo(() => {
-    return getAdditionalMedicareTaxAnalysis(taxData, taxpayer.filingStatus);
-  }, [taxData, taxpayer.filingStatus]);
+    const safeTaxpayer = taxpayer || { filingStatus: 'single' };
+    
+    return getAdditionalMedicareTaxAnalysis(taxData, safeTaxpayer.filingStatus);
+  }, [taxData, taxpayer]);
 
   // Memoized AMT Analysis
   const amtAnalysis = useMemo(() => {
-    return getAMTAnalysis(taxData, taxpayer, appSettings);
+    const safeTaxpayer = taxpayer || { age: null, filingStatus: 'single' };
+    const safeAppSettings = appSettings || {};
+    
+    return getAMTAnalysis(taxData, safeTaxpayer, safeAppSettings);
   }, [taxData, taxpayer, appSettings]);
 
   // Handle input changes for taxpayer and spouse
   const handlePersonChange = (person, field, value) => {
     const setter = person === 'taxpayer' ? setTaxpayer : setSpouse;
     setter(prev => {
-      const newState = { ...prev, [field]: value };
+      const safePrev = prev || { age: null, filingStatus: 'single' };
+      const newState = { ...safePrev, [field]: value };
       // Recalculate age if date of birth changes
       if (field === 'dateOfBirth') {
         newState.age = calculateAge(value);
@@ -757,16 +822,20 @@ function App() {
   // Handle housing changes for taxpayer and spouse
   const handleHousingChange = (person, field, value) => {
     const setter = person === 'taxpayer' ? setTaxpayer : setSpouse;
-    setter(prev => ({
-      ...prev,
-      housing: { ...prev.housing, [field]: value }
-    }));
+    setter(prev => {
+      const safePrev = prev || { housing: {} };
+      return {
+        ...safePrev,
+        housing: { ...(safePrev.housing || {}), [field]: value }
+      };
+    });
   };
 
   // Handle adding a new income source
   const handleAddIncomeSource = () => {
-    const newId = incomeSources.length > 0 ? Math.max(...incomeSources.map(s => s.id)) + 1 : 1;
-    setIncomeSources([...incomeSources, { 
+    const safeIncomeSources = Array.isArray(incomeSources) ? incomeSources : [];
+    const newId = safeIncomeSources.length > 0 ? Math.max(...safeIncomeSources.map(s => s.id)) + 1 : 1;
+    setIncomeSources([...safeIncomeSources, { 
       id: newId, 
       name: '', 
       type: 'wages', 
@@ -780,50 +849,69 @@ function App() {
 
   // Handle updating an income source
   const handleUpdateIncomeSource = (id, field, value) => {
-    setIncomeSources(incomeSources.map(source => 
-      source.id === id ? { ...source, [field]: value } : source
+    const safeIncomeSources = Array.isArray(incomeSources) ? incomeSources : [];
+    setIncomeSources(safeIncomeSources.map(source => 
+      source && source.id === id ? { ...source, [field]: value } : source
     ));
   };
 
   // Handle deleting an income source
   const handleDeleteIncomeSource = (id) => {
-    setIncomeSources(incomeSources.filter(source => source.id !== id));
+    const safeIncomeSources = Array.isArray(incomeSources) ? incomeSources : [];
+    setIncomeSources(safeIncomeSources.filter(source => source && source.id !== id));
   };
 
   // Handle changes in deductions
   const handleDeductionChange = (category, field, value) => {
-    setDeductions(prev => ({
-      ...prev,
-      [category]: { ...prev[category], [field]: value }
-    }));
+    setDeductions(prev => {
+      const safePrev = prev || {};
+      const safeCategory = safePrev[category] || {};
+      return {
+        ...safePrev,
+        [category]: { ...safeCategory, [field]: value }
+      };
+    });
   };
 
   // Handle changes in tax map settings
   const handleTaxMapSettingChange = (field, value) => {
-    setTaxMapSettings(prev => ({ ...prev, [field]: value }));
+    setTaxMapSettings(prev => {
+      const safePrev = prev || {};
+      return { ...safePrev, [field]: value };
+    });
   };
 
   // Handle changes in application settings
   const handleAppSettingChange = (category, field, value) => {
-    if (category) {
-      setAppSettings(prev => ({
-        ...prev,
-        [category]: { ...prev[category], [field]: value }
-      }));
-    } else {
-      setAppSettings(prev => ({ ...prev, [field]: value }));
-    }
+    setAppSettings(prev => {
+      const safePrev = prev || {};
+      if (category) {
+        const safeCategory = safePrev[category] || {};
+        return {
+          ...safePrev,
+          [category]: { ...safeCategory, [field]: value }
+        };
+      } else {
+        return { ...safePrev, [field]: value };
+      }
+    });
   };
 
   // Handle Medicare settings changes
   const handleMedicareChange = (person, part, value) => {
-    setAppSettings(prev => ({
-      ...prev,
-      medicare: {
-        ...prev.medicare,
-        [person]: { ...prev.medicare[person], [part]: value }
-      }
-    }));
+    setAppSettings(prev => {
+      const safePrev = prev || {};
+      const medicare = safePrev.medicare || {};
+      const personSettings = medicare[person] || {};
+      
+      return {
+        ...safePrev,
+        medicare: {
+          ...medicare,
+          [person]: { ...personSettings, [part]: value }
+        }
+      };
+    });
   };
 
   // Handle saving view preferences

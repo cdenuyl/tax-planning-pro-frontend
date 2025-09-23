@@ -5,25 +5,47 @@ import { calculateLongTermCapitalGainsTax, LONG_TERM_CAPITAL_GAINS_BRACKETS_2025
 import { getIrmaaThresholds, getSocialSecurityThresholds } from '../utils/irmaaThresholds.js';
 import { calculateFICATaxes } from '../utils/ficaTaxes.js';
 
-export function InteractiveTaxMap({ calculations, incomeSources, settings = {}, appSettings = {}, ficaEnabled = false, onToggleIncomeSource, onUpdateSettings }) {
-  const { totalIncome, federalTaxableIncome, federalTax, netStateTax, effectiveRateFederal, effectiveRateTotal, filingStatus = 'single' } = calculations || {};
-  const { incomeType = 'ordinary', jurisdiction = 'federal', view = 'detailed', methodology = 'incremental' } = settings;
+export function InteractiveTaxMap({ calculations = {}, incomeSources = [], settings = {}, appSettings = {}, ficaEnabled = false, onToggleIncomeSource, onUpdateSettings }) {
+  // Safely extract calculations with defaults
+  const {
+    totalIncome = 0,
+    federalTaxableIncome = 0,
+    federalTax = 0,
+    netStateTax = 0,
+    effectiveRateFederal = 0,
+    effectiveRateTotal = 0,
+    filingStatus = 'single'
+  } = calculations || {};
+  
+  // Safely extract settings with defaults
+  const {
+    incomeType = 'ordinary',
+    jurisdiction = 'federal',
+    view = 'detailed',
+    methodology = 'incremental'
+  } = settings || {};
   
   // Helper function to get yearly amount (convert monthly to yearly if needed)
   const getYearlyAmount = (source) => {
-    if (source.frequency === 'monthly') {
-      return source.amount * 12;
+    if (!source || typeof source !== 'object') {
+      return 0;
     }
-    return source.amount;
+    if (source.frequency === 'monthly') {
+      return (source.amount || 0) * 12;
+    }
+    return source.amount || 0;
   };
   
-  // Get thresholds for visualization
-  const ssThresholds = getSocialSecurityThresholds(filingStatus);
-  const irmaaThresholds = getIrmaaThresholds(filingStatus);
+  // Get thresholds for visualization with safe defaults
+  const ssThresholds = getSocialSecurityThresholds(filingStatus) || { tier1: 25000, tier2: 34000 };
+  const irmaaThresholds = getIrmaaThresholds(filingStatus) || [];
   
   // Calculate IRMAA positions dynamically based on current thresholds (future-proof)
   const calculateIrmaaPositions = useMemo(() => {
     const positions = {};
+    
+    // Ensure appSettings exists
+    const safeAppSettings = appSettings || {};
     
     // Standard reference scenario for consistent positioning
     const referenceSSAmount = 36000; // Standard SS amount for calculations
@@ -63,7 +85,7 @@ export function InteractiveTaxMap({ calculations, incomeSources, settings = {}, 
             }
           });
           
-          const testCalculations = calculateComprehensiveTaxes(testSources, 65, null, filingStatus, null, appSettings);
+          const testCalculations = calculateComprehensiveTaxes(testSources, 65, null, filingStatus, null, safeAppSettings);
           const testMAGI = testCalculations.federalTaxableIncome;
           
           // Check if we're close enough
@@ -99,26 +121,32 @@ export function InteractiveTaxMap({ calculations, incomeSources, settings = {}, 
     });
     
     return positions;
-  }, [methodology, filingStatus, appSettings]);
+  }, [methodology, filingStatus, safeAppSettings]);
   
   // Generate tax map data points with methodology-specific calculations
   const taxMapData = useMemo(() => {
     const data = [];
     
+    // Ensure incomeSources is an array
+    const safeIncomeSources = Array.isArray(incomeSources) ? incomeSources : [];
+    
     // Get Social Security amount for calculations
     // Helper function to get yearly amount (convert monthly to yearly if needed)
     const getYearlyAmount = (source) => {
-      if (source.frequency === 'monthly') {
-        return source.amount * 12;
+      if (!source || typeof source !== 'object') {
+        return 0;
       }
-      return source.amount;
+      if (source.frequency === 'monthly') {
+        return (source.amount || 0) * 12;
+      }
+      return source.amount || 0;
     };
 
-    const enabledSources = Array.isArray(incomeSources) ? incomeSources.filter(source => source.enabled) : [];
+    const enabledSources = safeIncomeSources.filter(source => source && source.enabled);
     const ssSource = enabledSources.find(source => source.type === 'social-security');
     const ssAmount = ssSource ? getYearlyAmount(ssSource) : 0;
     const otherSources = enabledSources.filter(source => source.type !== 'social-security');
-    const totalOtherIncome = Array.isArray(otherSources) ? otherSources.reduce((sum, source) => sum + getYearlyAmount(source), 0) : 0;
+    const totalOtherIncome = otherSources.reduce((sum, source) => sum + getYearlyAmount(source), 0);
     
     // Set income range and step based on methodology
     let maxIncome, step, incomeBase;
@@ -145,9 +173,15 @@ export function InteractiveTaxMap({ calculations, incomeSources, settings = {}, 
     let currentPosition;
     if (incomeType === 'capital') {
       // For capital gains mode, use actual capital gains amounts
-      const totalCapitalGains = (calculations.capitalGains?.longTerm?.amount || 0) + 
-                               (calculations.capitalGains?.shortTerm?.amount || 0) +
-                               (calculations.capitalGains?.qualified?.amount || 0);
+      const safeCalculations = calculations || {};
+      const capitalGains = safeCalculations.capitalGains || {};
+      const longTerm = capitalGains.longTerm || {};
+      const shortTerm = capitalGains.shortTerm || {};
+      const qualified = capitalGains.qualified || {};
+      
+      const totalCapitalGains = (longTerm.amount || 0) + 
+                               (shortTerm.amount || 0) +
+                               (qualified.amount || 0);
       currentPosition = totalCapitalGains;
     } else if (methodology === 'incremental') {
       // For incremental methodology, current position is non-SS income
@@ -182,18 +216,18 @@ export function InteractiveTaxMap({ calculations, incomeSources, settings = {}, 
       
       if (incomeType === 'capital') {
         // Capital gains mode: Use standardized ordinary income + variable capital gains
-        // Get current ordinary income (econst currentOrdinaryIncome = Array.isArray(enabledSources) ? enabledSources
-          .filter(source => ![
+        // Get current ordinary income (econst currentOrdinaryIncome = enabledSources
+          .filter(source => source && ![
             'long-term-capital-gains', 
             'short-term-capital-gains', 
             'qualified-dividends'
           ].includes(source.type))
-          .reduce((sum, source) => sum + getYearlyAmount(source), 0) : 0;    
+          .reduce((sum, source) => sum + getYearlyAmount(source), 0);    
         // Create standardized sources with current ordinary income + variable capital gains
         tempSources = [
           // Keep current ordinary income sources as baseline
           ...enabledSources
-            .filter(source => !['long-term-capital-gains', 'short-term-capital-gains', 'qualified-dividends'].includes(source.type))
+            .filter(source => source && !['long-term-capital-gains', 'short-term-capital-gains', 'qualified-dividends'].includes(source.type))
             .map(source => ({
               ...source,
               amount: getYearlyAmount(source),
@@ -263,20 +297,20 @@ export function InteractiveTaxMap({ calculations, incomeSources, settings = {}, 
       }
       
       // Calculate taxes at this income level
-      const tempCalculations = calculateComprehensiveTaxes(tempSources, calculations?.taxpayerAge, calculations?.spouseAge, filingStatus, null, appSettings);
+      const tempCalculations = calculateComprehensiveTaxes(tempSources, (calculations && calculations.taxpayerAge) || 65, (calculations && calculations.spouseAge) || null, filingStatus, null, appSettings || {});
       
       // Determine which rate to use based on income type setting
       let baseMarginalRate, baseLabel;
       if (incomeType === 'ordinary') {
         // Base marginal rates (FEDERAL ONLY - clean stair-stepping)
-        const federalMarginalRate = getCurrentMarginalRate(tempCalculations.federalTaxableIncome, filingStatus, appSettings);
+        const federalMarginalRate = getCurrentMarginalRate((tempCalculations && tempCalculations.federalTaxableIncome) || 0, filingStatus, appSettings || {});
         baseMarginalRate = federalMarginalRate; // Base is federal only
         baseLabel = 'Federal Marginal Rate';
       } else {
         // Capital gains rates - use the income amount as capital gains for chart calculation
         const capitalGainsAmount = income;
         // For capital gains mode, use the ordinary income from the calculation (excluding the variable capital gains)
-        const ordinaryIncomeForCG = tempCalculations.federalTaxableIncome - capitalGainsAmount;
+        const ordinaryIncomeForCG = (tempCalculations && tempCalculations.federalTaxableIncome) ? tempCalculations.federalTaxableIncome - capitalGainsAmount : 0;
         const longTermCapitalGainsCalc = calculateLongTermCapitalGainsTax(capitalGainsAmount, Math.max(0, ordinaryIncomeForCG), filingStatus);
         baseMarginalRate = longTermCapitalGainsCalc.marginalRate;
         baseLabel = 'Capital Gains Rate';
@@ -300,9 +334,12 @@ export function InteractiveTaxMap({ calculations, incomeSources, settings = {}, 
       
       // Calculate Social Security effect based on methodology
       let socialSecuritySpike = 0;
-      if (tempCalculations.socialSecurity.socialSecurityBenefits > 0) {
-        const provisionalIncome = tempCalculations.socialSecurity.provisionalIncome;
-        const ssThresholds = getSocialSecurityThresholds(filingStatus);
+      const safeTempCalculations = tempCalculations || {};
+      const socialSecurity = safeTempCalculations.socialSecurity || {};
+      
+      if (socialSecurity.socialSecurityBenefits > 0) {
+        const provisionalIncome = socialSecurity.provisionalIncome || 0;
+        const ssThresholds = getSocialSecurityThresholds(filingStatus) || { tier1: 25000, tier2: 34000 };
         
         if (incomeType === 'capital') {
           // For capital gains mode, Social Security effect is based on how capital gains affect provisional income
@@ -313,7 +350,7 @@ export function InteractiveTaxMap({ calculations, incomeSources, settings = {}, 
           } else if (provisionalIncome > ssThresholds.tier2) {
             // In 85% taxation zone - check if we're still increasing SS taxation
             const maxTaxableSS = ssAmount * 0.85;
-            const currentTaxableSS = tempCalculations.socialSecurity.taxableSocialSecurity;
+            const currentTaxableSS = socialSecurity.taxableSocialSecurity || 0;
             
             if (currentTaxableSS < maxTaxableSS) {
               // Still increasing SS taxation
@@ -333,7 +370,7 @@ export function InteractiveTaxMap({ calculations, incomeSources, settings = {}, 
           } else if (provisionalIncome > ssThresholds.tier2) {
             // In 85% taxation zone - but check if we're still increasing SS taxation
             const maxTaxableSS = ssAmount * 0.85;
-            const currentTaxableSS = tempCalculations.socialSecurity.taxableSocialSecurity;
+            const currentTaxableSS = socialSecurity.taxableSocialSecurity || 0;
             
             if (currentTaxableSS < maxTaxableSS) {
               // Still increasing SS taxation
@@ -443,10 +480,15 @@ export function InteractiveTaxMap({ calculations, incomeSources, settings = {}, 
         
         // Apply only the highest applicable tier (not cumulative)
         if (applicableIrmaaTier) {
-          const partBIncrease = appSettings.medicare?.taxpayer?.partB ? applicableIrmaaTier.partB : 0;
-          const partDIncrease = appSettings.medicare?.taxpayer?.partD ? applicableIrmaaTier.partD : 0;
-          const spousePartBIncrease = appSettings.medicare?.spouse?.partB ? applicableIrmaaTier.partB : 0;
-          const spousePartDIncrease = appSettings.medicare?.spouse?.partD ? applicableIrmaaTier.partD : 0;
+          const safeAppSettings = appSettings || {};
+          const medicare = safeAppSettings.medicare || {};
+          const taxpayer = medicare.taxpayer || {};
+          const spouse = medicare.spouse || {};
+          
+          const partBIncrease = taxpayer.partB ? applicableIrmaaTier.partB : 0;
+          const partDIncrease = taxpayer.partD ? applicableIrmaaTier.partD : 0;
+          const spousePartBIncrease = spouse.partB ? applicableIrmaaTier.partB : 0;
+          const spousePartDIncrease = spouse.partD ? applicableIrmaaTier.partD : 0;
           totalIrmaaIncrease = partBIncrease + partDIncrease + spousePartBIncrease + spousePartDIncrease;
         }
         
@@ -499,10 +541,15 @@ export function InteractiveTaxMap({ calculations, incomeSources, settings = {}, 
         
         // Apply only the highest applicable tier (not cumulative)
         if (applicableIrmaaTier) {
-          const partBIncrease = appSettings.medicare?.taxpayer?.partB ? applicableIrmaaTier.partB : 0;
-          const partDIncrease = appSettings.medicare?.taxpayer?.partD ? applicableIrmaaTier.partD : 0;
-          const spousePartBIncrease = appSettings.medicare?.spouse?.partB ? applicableIrmaaTier.partB : 0;
-          const spousePartDIncrease = appSettings.medicare?.spouse?.partD ? applicableIrmaaTier.partD : 0;
+          const safeAppSettings = appSettings || {};
+          const medicare = safeAppSettings.medicare || {};
+          const taxpayer = medicare.taxpayer || {};
+          const spouse = medicare.spouse || {};
+          
+          const partBIncrease = taxpayer.partB ? applicableIrmaaTier.partB : 0;
+          const partDIncrease = taxpayer.partD ? applicableIrmaaTier.partD : 0;
+          const spousePartBIncrease = spouse.partB ? applicableIrmaaTier.partB : 0;
+          const spousePartDIncrease = spouse.partD ? applicableIrmaaTier.partD : 0;
           totalIrmaaIncrease = partBIncrease + partDIncrease + spousePartBIncrease + spousePartDIncrease;
         }
         
@@ -521,12 +568,13 @@ export function InteractiveTaxMap({ calculations, incomeSources, settings = {}, 
       if (ficaEnabled && incomeType !== 'capital') {
         // Capital gains are not subject to FICA taxes, so skip FICA calculation for capital gains mode
         // Calculate current earned income from enabled sources only
-        const currentEarnedIncome = incomeSources
-          .filter(source => source.enabled) // Only consider enabled sources
+        const safeIncomeSources = Array.isArray(incomeSources) ? incomeSources : [];
+        const currentEarnedIncome = safeIncomeSources
+          .filter(source => source && source.enabled) // Only consider enabled sources
           .reduce((sum, source) => {
             // Only count earned income sources for FICA
             if (['wages', 'selfEmployment', 'consulting'].includes(source.type)) {
-              return sum + source.amount;
+              return sum + (source.amount || 0);
             }
             return sum;
           }, 0);
@@ -564,12 +612,12 @@ export function InteractiveTaxMap({ calculations, incomeSources, settings = {}, 
         stateMarginalRate: (() => {
           // Recalculate Michigan taxable income for state marginal rate
           const socialSecurityAmount = tempSources
-            .filter(source => source.type === 'social-security' && source.enabled)
-            .reduce((sum, source) => sum + source.amount, 0);
+            .filter(source => source && source.type === 'social-security' && source.enabled)
+            .reduce((sum, source) => sum + (source.amount || 0), 0);
           const michiganTaxableIncome = Math.max(0, income - socialSecurityAmount);
           return michiganTaxableIncome > 0 ? MICHIGAN_TAX_RATE * 100 : 0;
         })(), // Use actual marginal rate, not effective rate
-        effectiveRateFederal: tempCalculations.effectiveRateFederal * 100,
+        effectiveRateFederal: (safeTempCalculations.effectiveRateFederal || 0) * 100,
         stateEffectiveRate: stateEffectiveRate * 100, // Add state effective rate to data
         
         // For tooltip - show actual total income regardless of methodology
@@ -579,7 +627,7 @@ export function InteractiveTaxMap({ calculations, incomeSources, settings = {}, 
         formattedNonSSIncome: new Intl.NumberFormat('en-US', { style: 'currency', currency: 'USD', minimumFractionDigits: 0 }).format(income),
         
         // Social Security details for tooltip
-        ssDetails: tempCalculations.socialSecurity,
+        ssDetails: safeTempCalculations.socialSecurity || {},
         
         // Methodology info for tooltip
         methodology
@@ -587,18 +635,21 @@ export function InteractiveTaxMap({ calculations, incomeSources, settings = {}, 
     }
     
     return data;
-  }, [totalIncome, incomeSources, incomeType, methodology, appSettings, filingStatus, ficaEnabled]);
+  }, [totalIncome, incomeSources, incomeType, methodology, appSettings, filingStatus, ficaEnabled, calculations]);
   
   const CustomTooltip = ({ active, payload, label }) => {
     if (active && payload && payload.length) {
       const data = payload[0].payload;
       
+      // Ensure safe access to incomeSources
+      const safeIncomeSources = Array.isArray(incomeSources) ? incomeSources : [];
+      
       // Calculate the correct income to display based on methodology
       let displayIncome;
       if (methodology === 'incremental') {
         // For incremental view, show the total income (current position + additional non-SS income)
-        const currentNonSSIncome = totalIncome - (incomeSources.find(s => s.type === 'social-security' && s.enabled) ? getYearlyAmount(incomeSources.find(s => s.type === 'social-security' && s.enabled)) : 0);
-        const ssAmount = incomeSources.find(s => s.type === 'social-security' && s.enabled) ? getYearlyAmount(incomeSources.find(s => s.type === 'social-security' && s.enabled)) : 0;
+        const currentNonSSIncome = totalIncome - (safeIncomeSources.find(s => s && s.type === 'social-security' && s.enabled) ? getYearlyAmount(safeIncomeSources.find(s => s && s.type === 'social-security' && s.enabled)) : 0);
+        const ssAmount = safeIncomeSources.find(s => s && s.type === 'social-security' && s.enabled) ? getYearlyAmount(safeIncomeSources.find(s => s && s.type === 'social-security' && s.enabled)) : 0;
         displayIncome = data.income + ssAmount; // data.income is non-SS income, add back SS to get total
       } else {
         // For total marginal view, show the income directly
@@ -640,10 +691,11 @@ export function InteractiveTaxMap({ calculations, incomeSources, settings = {}, 
       
       // Get IRMAA tier information
       let irmaaTier = null;
-      for (let i = 0; i < irmaaThresholds.length; i++) {
-        if (displayIncome >= irmaaThresholds[i].min && 
-            (i === irmaaThresholds.length - 1 || displayIncome < irmaaThresholds[i + 1].min)) {
-          irmaaTier = irmaaThresholds[i];
+      const safeIrmaaThresholds = Array.isArray(irmaaThresholds) ? irmaaThresholds : [];
+      for (let i = 0; i < safeIrmaaThresholds.length; i++) {
+        if (displayIncome >= safeIrmaaThresholds[i].min && 
+            (i === safeIrmaaThresholds.length - 1 || displayIncome < safeIrmaaThresholds[i + 1].min)) {
+          irmaaTier = safeIrmaaThresholds[i];
           break;
         }
       }
@@ -653,7 +705,8 @@ export function InteractiveTaxMap({ calculations, incomeSources, settings = {}, 
       
       // Calculate provisional income at the hovered point
       // Provisional income = AGI (excluding SS) + Tax-exempt interest + 50% of SS benefits
-      const ssAmount = data.ssDetails?.socialSecurityBenefits || 0;
+      const safeSSDetails = data.ssDetails || {};
+      const ssAmount = safeSSDetails.socialSecurityBenefits || 0;
       let agiExcludingSS;
       
       if (methodology === 'incremental') {
@@ -753,14 +806,14 @@ export function InteractiveTaxMap({ calculations, incomeSources, settings = {}, 
               </>
             )}
             
-            {irmaaTier && irmaaTier.premium > 0 && (
+            {irmaaTier && (irmaaTier.premium || 0) > 0 && (
               <>
                 <div className="font-bold text-white drop-shadow-lg">IRMAA Tier:</div>
                 <div className="font-semibold text-white drop-shadow-lg">{irmaaTier.label}</div>
                 <div></div>
                 
                 <div className="font-bold text-white drop-shadow-lg">IRMAA Monthly:</div>
-                <div className="font-semibold text-white drop-shadow-lg">${irmaaTier.premium.toFixed(2)}</div>
+                <div className="font-semibold text-white drop-shadow-lg">${(irmaaTier.premium || 0).toFixed(2)}</div>
                 <div></div>
               </>
             )}
@@ -774,7 +827,7 @@ export function InteractiveTaxMap({ calculations, incomeSources, settings = {}, 
             <div className="font-semibold text-white drop-shadow-lg">{(() => {
               try {
                 // Show federal effective rate for next dollar, not marginal rate
-                const federalEffective = data.effectiveRateFederal || 0;
+                const federalEffective = (data && data.effectiveRateFederal) || 0;
                 return `${federalEffective.toFixed(2)}%`;
               } catch (e) {
                 return "N/A";
@@ -786,7 +839,7 @@ export function InteractiveTaxMap({ calculations, incomeSources, settings = {}, 
             <div className="font-semibold text-white drop-shadow-lg">{(() => {
               try {
                 // Show state effective rate for next dollar, not marginal rate
-                const stateEffective = data.stateEffectiveRate || 0;
+                const stateEffective = (data && data.stateEffectiveRate) || 0;
                 return `${stateEffective.toFixed(2)}%`;
               } catch (e) {
                 return "N/A";
@@ -802,7 +855,7 @@ export function InteractiveTaxMap({ calculations, incomeSources, settings = {}, 
   
   // Handle toggle changes
   const handleToggleChange = (setting, value) => {
-    if (onUpdateSettings) {
+    if (onUpdateSettings && typeof onUpdateSettings === 'function') {
       onUpdateSettings(prev => ({ ...prev, [setting]: value }));
     }
   };
