@@ -216,7 +216,8 @@ export function InteractiveTaxMap({ calculations = {}, incomeSources = [], setti
       
       if (incomeType === 'capital') {
         // Capital gains mode: Use standardized ordinary income + variable capital gains
-        // Get current ordinary income (econst currentOrdinaryIncome = enabledSources
+        // Get current ordinary income
+        const currentOrdinaryIncome = enabledSources
           .filter(source => source && ![
             'long-term-capital-gains', 
             'short-term-capital-gains', 
