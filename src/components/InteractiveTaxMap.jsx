@@ -121,7 +121,7 @@ export function InteractiveTaxMap({ calculations = {}, incomeSources = [], setti
     });
     
     return positions;
-  }, [methodology, filingStatus, safeAppSettings]);
+  }, [methodology, filingStatus, appSettings]);
   
   // Generate tax map data points with methodology-specific calculations
   const taxMapData = useMemo(() => {
